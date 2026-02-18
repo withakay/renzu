@@ -14,6 +14,7 @@ from typing import Any, cast
 
 import httpx
 from fastapi import APIRouter, FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -53,6 +54,19 @@ def _api_error_handler(_: Request, exc: Exception) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorResponse(error=exc.error, detail=exc.detail).model_dump(),
+    )
+
+
+def _validation_error_handler(_: Request, exc: Exception) -> JSONResponse:
+    if not isinstance(exc, RequestValidationError):
+        return JSONResponse(
+            status_code=422,
+            content=ErrorResponse(error="validation_error", detail=str(exc)).model_dump(),
+        )
+
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(error="validation_error", detail=str(exc)).model_dump(),
     )
 
 
@@ -431,4 +445,5 @@ def register_routes(app: FastAPI) -> None:
     """Register API routes and exception handlers on an app."""
 
     app.add_exception_handler(ApiError, _api_error_handler)
+    app.add_exception_handler(RequestValidationError, _validation_error_handler)
     app.include_router(router)

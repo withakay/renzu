@@ -1,0 +1,13 @@
+{
+  "changeId": "003-04_embedding-provider",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771452332104,
+      "duration": 893397,
+      "completionPromiseFound": true,
+      "fileChangesCount": 3
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/003-04_embedding-provider/context.md"
+}
