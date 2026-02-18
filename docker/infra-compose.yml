@@ -21,12 +21,10 @@ services:
       context: ${GLEAN_DOCKER_PATH:-/Users/jack/Code/withakay/glean-docker}/base
       dockerfile: Dockerfile
     restart: unless-stopped
+    entrypoint: ["glean-server"]
     command:
-      - glean-server
       - --db-root
       - /data/glean/db
-      - --schema
-      - ${GLEAN_SCHEMA_DIR:-/opt/glean/schema/source}
       - --port
       - "12345"
     ports:
@@ -69,7 +67,7 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:
-      test: ["CMD", "bash", "-lc", "echo > /dev/tcp/localhost/11434"]
+      test: ["CMD", "ollama", "ps"]
       interval: 10s
       timeout: 3s
       retries: 30

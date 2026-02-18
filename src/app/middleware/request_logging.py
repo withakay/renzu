@@ -11,9 +11,9 @@ from typing import TYPE_CHECKING
 from starlette.middleware.base import BaseHTTPMiddleware
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
-    from fastapi import Request, Response
+    from starlette.middleware.base import RequestResponseEndpoint
+    from starlette.requests import Request
+    from starlette.responses import Response
 
 logger = logging.getLogger(__name__)
 
@@ -23,10 +23,8 @@ correlation_id: ContextVar[str | None] = ContextVar("correlation_id", default=No
 class CorrelationIdMiddleware(BaseHTTPMiddleware):
     """Middleware to add correlation ID to requests."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        corr_id = request.headers.get("X-Correlation-ID")
-        if not corr_id:
-            corr_id = str(uuid.uuid4())
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+        corr_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
         correlation_id.set(corr_id)
         response = await call_next(request)
         response.headers["X-Correlation-ID"] = corr_id
@@ -36,7 +34,7 @@ class CorrelationIdMiddleware(BaseHTTPMiddleware):
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
     """Middleware to log HTTP requests with metadata."""
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         start_time = time.perf_counter()
         response = await call_next(request)
         duration_ms = (time.perf_counter() - start_time) * 1000
