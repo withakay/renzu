@@ -10,3 +10,26 @@ make dev      # Run development server
 make check    # Run lint, format, and type checks
 make test     # Run unit tests
 ```
+
+## Infra Services (Docker Compose)
+
+Use the infra-only compose stack to run Qdrant, Glean, and Glass for local development.
+
+```bash
+cp .env.example .env
+docker compose -f docker/infra-compose.yml up -d
+```
+
+Include Ollama only when needed:
+
+```bash
+docker compose -f docker/infra-compose.yml --profile ollama up -d
+```
+
+Service endpoints:
+
+- Qdrant REST: `http://localhost:6333`
+- Qdrant gRPC: `localhost:6334`
+- Glean server: `localhost:12345`
+- Glass server: `localhost:12346`
+- Ollama (profile `ollama`): `http://localhost:11434`
