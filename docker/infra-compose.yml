@@ -23,15 +23,13 @@ services:
     container_name: glean-server
     restart: unless-stopped
     command:
-      [
-        "glean-server",
-        "--db-root",
-        "/data/glean/db",
-        "--schema",
-        "/data/glean/schema/source",
-        "--port",
-        "12345",
-      ]
+      - glean-server
+      - --db-root
+      - /data/glean/db
+      - --schema
+      - /data/glean/schema/source
+      - --port
+      - "12345"
     ports:
       - "12345:12345"
     volumes:
@@ -52,8 +50,7 @@ services:
     container_name: glass-server
     restart: unless-stopped
     depends_on:
-      glean-server:
-        condition: service_healthy
+      - glean-server
     command: ["glass-server", "--service", "glean-server:12345", "--port", "12346"]
     ports:
       - "12346:12346"
