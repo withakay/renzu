@@ -32,7 +32,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [-] shelved
 
 ______________________________________________________________________
 
@@ -45,7 +45,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Implement symbol-aware chunking using SCIP
 - **Files**: `path/to/file.rs`
@@ -55,7 +55,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Add symbol ID to chunk metadata
 - **Files**: `path/to/file.rs`
@@ -65,7 +65,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Implement hybrid chunking (SCIP + tree-sitter fallback)
 - **Files**: `path/to/file.rs`
@@ -75,7 +75,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
@@ -90,7 +90,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Add integration tests
 - **Files**: `path/to/file.rs`
@@ -100,7 +100,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -110,4 +110,4 @@ ______________________________________________________________________
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete

@@ -9,6 +9,8 @@ Hybrid behavior:
   definitions.
 - When no definition occurrences exist, fall back to a provided semantic
   chunker (default: TreeSitterChunker).
+
+The module also exposes a small convenience wrapper `chunk_with_scip(...)`.
 """
 
 from __future__ import annotations
@@ -90,7 +92,7 @@ class ScipChunker:
                 end_line=end_line_1,
                 start_byte=start_byte,
                 end_byte=end_byte,
-                chunk_type="scip:definition",
+                chunk_type="scip:def",
                 symbol_hint=_symbol_hint(span.symbol),
                 symbol_scip=span.symbol,
             )
@@ -112,6 +114,39 @@ def _definitions_by_file(index: ScipIndex) -> dict[str, tuple[_ScipDefinitionSpa
         filtered.sort(key=lambda span: (span.range.start_line, span.range.start_character))
         output[doc.relative_path] = filtered
     return {path: tuple(spans) for path, spans in output.items()}
+
+
+def chunk_with_scip(
+    content: str,
+    scip_index: ScipIndex,
+    *,
+    relative_path: str | None = None,
+    language: str | None = None,
+    max_chunk_bytes: int = 4096,
+    fallback: TreeSitterChunker | None = None,
+) -> Iterator[Chunk]:
+    """Chunk content using SCIP definition spans when available.
+
+    If `relative_path` is omitted and the index contains exactly one document,
+    that document's relative path is used.
+    """
+
+    if relative_path is None:
+        if len(scip_index.documents) != 1:
+            raise ValueError("relative_path is required when SCIP index has multiple documents")
+        relative_path = scip_index.documents[0].relative_path
+
+    if language is None:
+        if len(scip_index.documents) == 1:
+            language = scip_index.documents[0].language or "text"
+        else:
+            language = "text"
+
+    yield from ScipChunker(
+        scip_index,
+        max_chunk_bytes=max_chunk_bytes,
+        fallback=fallback,
+    ).chunk(content, relative_path=relative_path, language=language)
 
 
 def _span_from_occurrence(occ: ScipDocumentOccurrence) -> _ScipDefinitionSpan | None:

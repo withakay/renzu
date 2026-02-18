@@ -8,6 +8,7 @@ from dataclasses import dataclass
 import httpx
 import pytest
 
+from app.config import get_settings
 from app.indexing.embedder import CacheEmbedder, EmbeddingProvider, OpenAIEmbedder
 
 
@@ -104,3 +105,93 @@ class TestOpenAIEmbedder:
             )
             with pytest.raises(ValueError, match="Expected embedding size"):
                 await embedder.embed(["t1"])
+
+    async def test_batches_requests_when_configured(self) -> None:
+        request_inputs: list[list[str]] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            payload = json.loads(request.content.decode("utf-8"))
+            inputs = payload["input"]
+            assert isinstance(inputs, list)
+            request_inputs.append([str(item) for item in inputs])
+
+            text = request_inputs[-1][0]
+            value = 1.0 if text == "t1" else 2.0
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [value]}]})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="https://api.test/v1", transport=transport) as client:
+            embedder: EmbeddingProvider = OpenAIEmbedder(
+                client=client,
+                api_key="sk-test",
+                model="text-embedding-3-small",
+                vector_size=1,
+                batch_size=1,
+            )
+            vectors = await embedder.embed(["t1", "t2"])
+
+        assert request_inputs == [["t1"], ["t2"]]
+        assert vectors == [[1.0], [2.0]]
+
+    async def test_rate_limits_between_batches(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        sleep_calls: list[float] = []
+
+        async def fake_sleep(seconds: float) -> None:
+            sleep_calls.append(seconds)
+
+        monotonic_values = iter([0.0, 0.01, 0.02])
+
+        def fake_monotonic() -> float:
+            return next(monotonic_values)
+
+        from app.indexing import embedder as embedder_module
+
+        monkeypatch.setattr(embedder_module.asyncio, "sleep", fake_sleep)
+        monkeypatch.setattr(embedder_module.time, "monotonic", fake_monotonic)
+
+        def handler(_: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.0]}]})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="https://api.test/v1", transport=transport) as client:
+            embedder: EmbeddingProvider = OpenAIEmbedder(
+                client=client,
+                api_key="sk-test",
+                model="text-embedding-3-small",
+                vector_size=1,
+                batch_size=1,
+                min_interval_seconds=0.05,
+            )
+            _ = await embedder.embed(["t1", "t2"])
+
+        assert sleep_calls == [pytest.approx(0.04, rel=1e-6)]
+
+
+@pytest.mark.unit
+class TestEmbedderFactory:
+    def test_get_embedder_respects_provider_and_cache_config(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.indexing.embedder import CacheEmbedder, OpenAIEmbedder, get_embedder
+
+        monkeypatch.setenv("EMBEDDING_PROVIDER", "openai")
+        monkeypatch.setenv("EMBEDDING_CACHE_ENABLED", "false")
+        get_settings.cache_clear()
+        get_embedder.cache_clear()
+        provider = get_embedder()
+        assert isinstance(provider, OpenAIEmbedder)
+
+        monkeypatch.setenv("EMBEDDING_CACHE_ENABLED", "true")
+        get_settings.cache_clear()
+        get_embedder.cache_clear()
+        provider = get_embedder()
+        assert isinstance(provider, CacheEmbedder)
+
+    def test_get_embedder_raises_on_unknown_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.indexing.embedder import get_embedder
+
+        monkeypatch.setenv("EMBEDDING_PROVIDER", "nope")
+        get_settings.cache_clear()
+        get_embedder.cache_clear()
+        with pytest.raises(RuntimeError, match="Unsupported embedding provider"):
+            _ = get_embedder()

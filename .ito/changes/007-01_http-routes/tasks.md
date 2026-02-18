@@ -151,3 +151,14 @@ ______________________________________________________________________
 - **Done When**: Tests cover `/v1/index`, `/v1/search`, `/v1/snippet`, and `/v1/glass/*`.
 - **Updated At**: 2026-02-18
 - **Status**: [x] complete
+
+## Checkpoints
+
+### Checkpoint: Review Implementation
+
+- **Type**: checkpoint (requires human approval)
+- **Dependencies**: All Wave 1 tasks
+- **Action**: Review the implementation before proceeding
+- **Done When**: User confirms implementation is correct
+- **Updated At**: 2026-02-18
+- **Status**: [x] complete

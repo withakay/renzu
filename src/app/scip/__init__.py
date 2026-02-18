@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from app.scip.chunker import ScipChunker
+from app.scip.chunker import ScipChunker, chunk_with_scip
 from app.scip.parser import (
     ScipDocument,
     ScipDocumentOccurrence,
@@ -23,5 +23,6 @@ __all__ = [
     "ScipRange",
     "SymbolDescriptor",
     "SymbolIdentifier",
+    "chunk_with_scip",
     "parse_symbol_identifier",
 ]

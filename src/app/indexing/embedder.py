@@ -6,8 +6,10 @@ default OpenAI-backed implementation and an in-memory content-hash cache.
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
-from dataclasses import dataclass
+import time
+from dataclasses import dataclass, field
 from functools import lru_cache
 from typing import Any, Protocol, cast, runtime_checkable
 
@@ -46,7 +48,7 @@ def _coerce_vector(raw: Any, *, expected_size: int) -> list[float]:
     return vector
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(slots=True)
 class OpenAIEmbedder:
     """OpenAI embeddings API implementation.
 
@@ -57,25 +59,38 @@ class OpenAIEmbedder:
     api_key: str | None = None
     base_url: str | None = None
     vector_size: int | None = None
+    batch_size: int | None = None
+    min_interval_seconds: float | None = None
     timeout_seconds: float = 30.0
     client: httpx.AsyncClient | None = None
 
-    async def embed(self, texts: list[str]) -> list[list[float]]:
-        if not texts:
-            return []
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
+    _last_request_monotonic: float | None = field(default=None, init=False, repr=False)
 
-        settings = get_settings()
+    async def _sleep_if_needed(self, *, min_interval_seconds: float) -> None:
+        if min_interval_seconds <= 0:
+            return
 
-        model = self.model or settings.openai_embedding_model
-        api_key = self.api_key or settings.openai_api_key
-        if not api_key:
-            raise RuntimeError("OpenAI API key is not configured")
+        last = self._last_request_monotonic
+        if last is None:
+            return
 
-        base_url = self.base_url or settings.openai_base_url
-        expected_size = (
-            self.vector_size or settings.embedding_vector_size or settings.qdrant_vector_size
-        )
+        now = time.monotonic()
+        delta = now - last
+        remaining = min_interval_seconds - delta
+        if remaining > 0:
+            await asyncio.sleep(remaining)
 
+    async def _embed_batch(
+        self,
+        texts: list[str],
+        *,
+        model: str,
+        api_key: str,
+        base_url: str,
+        expected_size: int,
+        min_interval_seconds: float,
+    ) -> list[list[float]]:
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -85,11 +100,16 @@ class OpenAIEmbedder:
             "input": texts,
         }
 
-        if self.client is None:
-            async with httpx.AsyncClient(base_url=base_url, timeout=self.timeout_seconds) as client:
-                response = await client.post("/embeddings", headers=headers, json=payload)
-        else:
-            response = await self.client.post("/embeddings", headers=headers, json=payload)
+        async with self._lock:
+            await self._sleep_if_needed(min_interval_seconds=min_interval_seconds)
+            if self.client is None:
+                async with httpx.AsyncClient(
+                    base_url=base_url, timeout=self.timeout_seconds
+                ) as client:
+                    response = await client.post("/embeddings", headers=headers, json=payload)
+            else:
+                response = await self.client.post("/embeddings", headers=headers, json=payload)
+            self._last_request_monotonic = time.monotonic()
 
         response.raise_for_status()
 
@@ -119,6 +139,56 @@ class OpenAIEmbedder:
             if idx not in vectors_by_index:
                 raise RuntimeError(f"OpenAI embeddings response missing index {idx}")
             vectors.append(vectors_by_index[idx])
+
+        return vectors
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+
+        settings = get_settings()
+
+        model = self.model or settings.openai_embedding_model
+        api_key = self.api_key or settings.openai_api_key
+        if not api_key:
+            raise RuntimeError("OpenAI API key is not configured")
+
+        base_url = self.base_url or settings.openai_base_url
+        expected_size = (
+            self.vector_size or settings.embedding_vector_size or settings.qdrant_vector_size
+        )
+
+        batch_size = self.batch_size or settings.embedding_batch_size
+        if batch_size <= 0:
+            raise ValueError("embedding_batch_size must be > 0")
+
+        min_interval_seconds = self.min_interval_seconds
+        if min_interval_seconds is None:
+            min_interval_seconds = settings.embedding_min_interval_seconds
+
+        if len(texts) <= batch_size:
+            return await self._embed_batch(
+                texts,
+                model=model,
+                api_key=api_key,
+                base_url=base_url,
+                expected_size=expected_size,
+                min_interval_seconds=min_interval_seconds,
+            )
+
+        vectors: list[list[float]] = []
+        for start in range(0, len(texts), batch_size):
+            batch = texts[start : start + batch_size]
+            vectors.extend(
+                await self._embed_batch(
+                    batch,
+                    model=model,
+                    api_key=api_key,
+                    base_url=base_url,
+                    expected_size=expected_size,
+                    min_interval_seconds=min_interval_seconds,
+                )
+            )
 
         return vectors
 
@@ -166,4 +236,16 @@ def get_embedder() -> EmbeddingProvider:
     The default provider is OpenAI-backed with an in-memory cache wrapper.
     """
 
-    return CacheEmbedder(OpenAIEmbedder())
+    settings = get_settings()
+
+    provider_name = settings.embedding_provider.strip().lower()
+    match provider_name:
+        case "openai":
+            provider: EmbeddingProvider = OpenAIEmbedder()
+        case _:
+            raise RuntimeError(f"Unsupported embedding provider: {settings.embedding_provider}")
+
+    if settings.embedding_cache_enabled:
+        provider = CacheEmbedder(provider)
+
+    return provider

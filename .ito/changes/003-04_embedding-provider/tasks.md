@@ -23,102 +23,110 @@ ______________________________________________________________________
 
 - **Depends On**: None
 
-### Task 1.1: [Task Name]
+### Task 1.1: Align embedder module API to specs
 
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/indexing/embedder.py`, `src/app/indexing/__init__.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Ensure the embedder module exposes a clear provider interface and default factory function.
+- **Verify**: `make check`
+- **Done When**: The module matches the spec requirements and exports remain stable.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [ ] in-progress
 
 ______________________________________________________________________
 
 
-### Task 1.2: Create EmbeddingProvider abstract base class
-- **Files**: `path/to/file.rs`
+### Task 1.2: Create EmbeddingProvider interface
+
+- **Files**: `src/app/indexing/embedder.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Define `EmbeddingProvider` with `async embed(texts: list[str]) -> list[list[float]]`.
+- **Verify**: `make check`
+- **Done When**: Types enforce the provider contract and unit tests compile under basedpyright.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 1.3: Implement OpenAI embedding provider
-- **Files**: `path/to/file.rs`
+
+- **Files**: `src/app/indexing/embedder.py`, `src/app/config/__init__.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Implement `OpenAIEmbedder` calling `POST /v1/embeddings` with configurable model/base URL/API key.
+- **Verify**: `make test`
+- **Done When**: Unit tests validate request payload and response parsing.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 1.4: Add batch embedding support with rate limiting
-- **Files**: `path/to/file.rs`
+
+- **Files**: `src/app/indexing/embedder.py`, `src/app/config/__init__.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Add configurable batching (max items per request) and optional per-request rate limiting.
+- **Verify**: `make test`
+- **Done When**: Unit tests cover batching behavior and rate-limit sleeps.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 1.5: Implement content hash-based caching
-- **Files**: `path/to/file.rs`
+
+- **Files**: `src/app/indexing/embedder.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Implement `CacheEmbedder` that caches by SHA-256 of text content.
+- **Verify**: `make test`
+- **Done When**: Cache avoids duplicate provider calls and returns vectors in the original order.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 1.6: Add embedding dimension configuration
-- **Files**: `path/to/file.rs`
+
+- **Files**: `src/app/config/__init__.py`, `src/app/indexing/embedder.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Ensure the embedder validates output vector dimensionality using a configurable size.
+- **Verify**: `make test`
+- **Done When**: Mismatched dimensions raise a clear error and tests cover the failure mode.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ---
 
 ## Wave 2
-- **Depends On**: None
+- **Depends On**: Wave 1
 
 ### Task 2.1: Implement provider factory pattern
-- **Files**: `path/to/file.rs`
+
+- **Files**: `src/app/indexing/embedder.py`, `src/app/config/__init__.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Implement `get_embedder()` factory selecting a provider based on configuration and applying wrappers.
+- **Verify**: `make test`
+- **Done When**: Default provider can be constructed from settings without side effects.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 2.2: Write unit tests with mocked API responses
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+
+- **Files**: `tests/unit/test_embedder.py`
+- **Dependencies**: Task 2.1
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Add unit tests for OpenAI response parsing, batching, caching, and factory behavior.
+- **Verify**: `make test`
+- **Done When**: Tests cover success and error paths without real network calls.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
 ### Task 2.3: Add integration tests against real APIs
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+
+- **Files**: `tests/integration/test_openai_embedder_integration.py`
+- **Dependencies**: Task 2.1
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  Add an integration test that calls the real OpenAI embeddings API when credentials are present.
+- **Verify**: `make test`
+- **Done When**: Test is skipped unless `OPENAI_API_KEY` is configured.
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 ## Checkpoints

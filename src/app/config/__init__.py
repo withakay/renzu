@@ -24,6 +24,13 @@ class Settings(BaseSettings):
     openai_embedding_model: str = "text-embedding-3-small"
     # When unset, the embedder falls back to qdrant_vector_size.
     embedding_vector_size: int | None = None
+    # Embedding provider configuration.
+    embedding_provider: str = "openai"
+    embedding_cache_enabled: bool = True
+    # Maximum number of texts per embeddings request.
+    embedding_batch_size: int = 96
+    # Minimum delay between embedding requests (0 disables rate limiting).
+    embedding_min_interval_seconds: float = 0.0
     # Optional. When unset, Glass integration is disabled and callers must handle fallbacks.
     glass_url: str | None = None
     glass_timeout_seconds: float = 5.0

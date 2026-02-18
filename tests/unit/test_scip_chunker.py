@@ -45,7 +45,7 @@ class TestScipChunker:
 
         assert len(chunks) == 1
         chunk = chunks[0]
-        assert chunk.chunk_type == "scip:definition"
+        assert chunk.chunk_type == "scip:def"
         assert chunk.symbol_scip == symbol
         assert chunk.symbol_hint == "alpha"
         assert "def alpha" in chunk.text
