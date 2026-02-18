@@ -1,0 +1,13 @@
+{
+  "changeId": "008-02_scip-chunker",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771453069246,
+      "duration": 284085,
+      "completionPromiseFound": true,
+      "fileChangesCount": 4
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/008-02_scip-chunker/context.md"
+}
