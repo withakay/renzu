@@ -1,0 +1,96 @@
+[project]
+name = "code-context"
+version = "0.1.0"
+description = "Code RAG with vector search and symbol navigation for AI agents"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "qdrant-client>=1.13.0",
+    "tree-sitter>=0.24.0",
+    "protobuf>=5.29.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "httpx>=0.28.0",
+    "ruff>=0.9.0",
+    "basedpyright>=1.28.0",
+    "pre-commit>=4.1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ------------------------------------------------------------
+# Ruff
+# ------------------------------------------------------------
+
+[tool.ruff]
+target-version = "py314"
+src = ["src"]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # Pyflakes
+    "I",      # isort
+    "UP",     # pyupgrade
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "RUF",    # Ruff-specific
+    "SIM",    # flake8-simplify
+    "TCH",    # flake8-type-checking
+    "TID",    # flake8-tidy-imports
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+# ------------------------------------------------------------
+# basedpyright
+# ------------------------------------------------------------
+
+[tool.basedpyright]
+pythonVersion = "3.14"
+typeCheckingMode = "strict"
+reportMissingImports = true
+reportMissingTypeStubs = false
+exclude = ["**/__pycache__", ".venv", ".git"]
+
+# ------------------------------------------------------------
+# pytest
+# ------------------------------------------------------------
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+markers = [
+    "unit: fast tests without external services",
+    "integration: tests requiring Docker (Qdrant, Glean)",
+]
+addopts = "-ra -q --strict-markers"
+
+# ------------------------------------------------------------
+# uv
+# ------------------------------------------------------------
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.25.0",
+    "httpx>=0.28.0",
+    "ruff>=0.9.0",
+    "basedpyright>=1.28.0",
+    "pre-commit>=4.1.0",
+]
