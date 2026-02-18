@@ -1,0 +1,13 @@
+{
+  "changeId": "008-01_scip-parser",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771452484084,
+      "duration": 1015640,
+      "completionPromiseFound": true,
+      "fileChangesCount": 3
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/008-01_scip-parser/context.md"
+}
