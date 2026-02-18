@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import httpx
 
 from app.config import get_settings
+from app.indexing.qdrant import get_qdrant_client
 
 
 @dataclass
@@ -20,17 +21,14 @@ class HealthStatus:
 
 async def check_qdrant() -> HealthStatus:
     """Check if Qdrant is reachable."""
-    settings = get_settings()
+    _ = get_settings()
+    qdrant_client = get_qdrant_client()
     try:
-        async with httpx.AsyncClient(timeout=2.0) as client:
-            response = await client.get(f"{settings.qdrant_url}/")
-            if response.status_code == 200:
-                return HealthStatus(healthy=True, name="qdrant")
-            return HealthStatus(
-                healthy=False,
-                name="qdrant",
-                detail=f"Unexpected status: {response.status_code}",
-            )
+        is_healthy = await qdrant_client.health_check()
+        if is_healthy:
+            return HealthStatus(healthy=True, name="qdrant")
+
+        return HealthStatus(healthy=False, name="qdrant", detail="Connection refused")
     except httpx.ConnectError:
         return HealthStatus(healthy=False, name="qdrant", detail="Connection refused")
     except httpx.TimeoutException:

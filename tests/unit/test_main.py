@@ -63,7 +63,8 @@ class TestConfig:
         assert settings.http_port == 8000
         assert settings.mcp_port == 9000
         assert settings.log_level == "INFO"
-        assert settings.qdrant_collection == "code-context"
+        assert settings.qdrant_collection == "code_chunks"
+        assert settings.qdrant_vector_size == 1536
 
     def test_settings_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from app.config import Settings

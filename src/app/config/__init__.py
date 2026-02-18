@@ -21,7 +21,8 @@ class Settings(BaseSettings):
     http_port: int = 8000
     mcp_port: int = 9000
     log_level: str = "INFO"
-    qdrant_collection: str = "code-context"
+    qdrant_collection: str = "code_chunks"
+    qdrant_vector_size: int = 1536
 
 
 @lru_cache

@@ -32,7 +32,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ______________________________________________________________________
 
@@ -45,7 +45,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Implement collection initialization (create if not exists)
 - **Files**: `path/to/file.rs`
@@ -55,7 +55,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Define ChunkPayload Pydantic model
 - **Files**: `path/to/file.rs`
@@ -65,7 +65,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Implement point upsert with payload schema
 - **Files**: `path/to/file.rs`
@@ -75,7 +75,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.6: Implement point delete by repo_id
 - **Files**: `path/to/file.rs`
@@ -85,7 +85,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.7: Implement search with filters (repo_id, path_prefix, language)
 - **Files**: `path/to/file.rs`
@@ -95,7 +95,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
@@ -110,7 +110,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Write unit tests with mocked Qdrant
 - **Files**: `path/to/file.rs`
@@ -120,7 +120,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.3: Write integration tests against real Qdrant
 - **Files**: `path/to/file.rs`
@@ -130,7 +130,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -140,4 +140,4 @@ ______________________________________________________________________
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
