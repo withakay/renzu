@@ -65,6 +65,7 @@ select = [
 ]
 ignore = [
     "E501",   # line too long (handled by formatter)
+    "TC006",  # don't require quotes in typing.cast()
 ]
 
 [tool.ruff.lint.isort]

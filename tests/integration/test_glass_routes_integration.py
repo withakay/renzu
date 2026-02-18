@@ -19,7 +19,9 @@ from app.main import app
 async def test_glass_list_symbols_returns_fallback_when_disabled(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("GLASS_URL", raising=False)
+    import app.api.routes as routes
+
+    monkeypatch.setattr(routes, "get_glass_service", lambda: GlassService(client=None))
 
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
