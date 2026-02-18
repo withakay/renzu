@@ -19,3 +19,7 @@ This file is for optional, user-authored guidance specific to `ito agent instruc
 Access `glean-docker` for local development and testing of the Glean API here: 
 
 - .local/glean-docker
+
+## Use gitwork trees to manage your branches and avoid merge conflicts.
+
+Use the Skill "using-git-worktrees" to figure out how.
