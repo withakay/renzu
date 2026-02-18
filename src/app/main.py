@@ -1,8 +1,18 @@
 """FastAPI application entry point."""
 
-from fastapi import FastAPI
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import FastAPI, Response
 
 from app import __version__
+from app.config import get_settings
+from app.dependencies import check_all_dependencies
+from app.logging_config import setup_logging
+
+settings = get_settings()
+setup_logging(settings.log_level)
 
 app = FastAPI(
     title="Code Context Service",
@@ -13,11 +23,17 @@ app = FastAPI(
 
 @app.get("/healthz")
 async def healthz() -> dict[str, str]:
-    """Health check endpoint."""
+    """Liveness probe - always returns 200 if the process is alive."""
     return {"status": "ok"}
 
 
 @app.get("/readyz")
-async def readyz() -> dict[str, str]:
-    """Readiness check endpoint."""
-    return {"status": "ready"}
+async def readyz(response: Response) -> dict[str, Any]:
+    """Readiness probe - returns 200 if dependencies are reachable, 503 otherwise."""
+    all_healthy, results = await check_all_dependencies()
+    if not all_healthy:
+        response.status_code = 503
+    return {
+        "status": "ready" if all_healthy else "not_ready",
+        "checks": {r.name: {"healthy": r.healthy, "detail": r.detail} for r in results},
+    }
