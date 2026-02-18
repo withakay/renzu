@@ -1,6 +1,6 @@
 {
   "changeId": "003-05_indexing-pipeline",
-  "iteration": 2,
+  "iteration": 3,
   "history": [
     {
       "timestamp": 1771453819248,
@@ -11,6 +11,12 @@
     {
       "timestamp": 1771453850645,
       "duration": 31396,
+      "completionPromiseFound": false,
+      "fileChangesCount": 1
+    },
+    {
+      "timestamp": 1771453982392,
+      "duration": 131747,
       "completionPromiseFound": false,
       "fileChangesCount": 1
     }
