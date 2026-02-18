@@ -32,7 +32,7 @@ ______________________________________________________________________
 - **Verify**: `make check`
 - **Done When**: The module matches the spec requirements and exports remain stable.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] in-progress
+- **Status**: [x] complete
 
 ______________________________________________________________________
 
@@ -46,7 +46,7 @@ ______________________________________________________________________
 - **Verify**: `make check`
 - **Done When**: Types enforce the provider contract and unit tests compile under basedpyright.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Implement OpenAI embedding provider
 
@@ -57,7 +57,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Unit tests validate request payload and response parsing.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Add batch embedding support with rate limiting
 
@@ -68,7 +68,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Unit tests cover batching behavior and rate-limit sleeps.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Implement content hash-based caching
 
@@ -79,7 +79,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Cache avoids duplicate provider calls and returns vectors in the original order.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.6: Add embedding dimension configuration
 
@@ -90,7 +90,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Mismatched dimensions raise a clear error and tests cover the failure mode.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
@@ -106,7 +106,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Default provider can be constructed from settings without side effects.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Write unit tests with mocked API responses
 
@@ -117,7 +117,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Tests cover success and error paths without real network calls.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.3: Add integration tests against real APIs
 
@@ -128,7 +128,7 @@ ______________________________________________________________________
 - **Verify**: `make test`
 - **Done When**: Test is skipped unless `OPENAI_API_KEY` is configured.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -138,4 +138,4 @@ ______________________________________________________________________
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete

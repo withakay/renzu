@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from typing import cast
 
 import httpx
 import pytest
@@ -113,7 +114,8 @@ class TestOpenAIEmbedder:
             payload = json.loads(request.content.decode("utf-8"))
             inputs = payload["input"]
             assert isinstance(inputs, list)
-            request_inputs.append([str(item) for item in inputs])
+            inputs_list = list(cast("list[object]", inputs))
+            request_inputs.append([str(item) for item in inputs_list])
 
             text = request_inputs[-1][0]
             value = 1.0 if text == "t1" else 2.0
@@ -141,10 +143,15 @@ class TestOpenAIEmbedder:
 
         monotonic_values = iter([0.0, 0.01, 0.02])
 
-        def fake_monotonic() -> float:
-            return next(monotonic_values)
-
         from app.indexing import embedder as embedder_module
+
+        original_monotonic = embedder_module.time.monotonic
+
+        def fake_monotonic() -> float:
+            try:
+                return next(monotonic_values)
+            except StopIteration:
+                return original_monotonic()
 
         monkeypatch.setattr(embedder_module.asyncio, "sleep", fake_sleep)
         monkeypatch.setattr(embedder_module.time, "monotonic", fake_monotonic)
@@ -164,7 +171,8 @@ class TestOpenAIEmbedder:
             )
             _ = await embedder.embed(["t1", "t2"])
 
-        assert sleep_calls == [pytest.approx(0.04, rel=1e-6)]
+        assert len(sleep_calls) == 1
+        assert abs(sleep_calls[0] - 0.04) < 1e-6
 
 
 @pytest.mark.unit
