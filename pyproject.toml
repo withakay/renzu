@@ -12,6 +12,7 @@ dependencies = [
     "protobuf>=5.29.0",
     "pydantic-settings>=2.7.0",
     "python-json-logger>=3.2.0",
+    "httpx>=0.28.0",
 ]
 
 [project.scripts]
@@ -69,6 +70,9 @@ ignore = [
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/app/scip/_proto/scip_pb2.py" = ["I001", "UP009"]
+
 # ------------------------------------------------------------
 # basedpyright
 # ------------------------------------------------------------
@@ -78,7 +82,7 @@ pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportMissingTypeStubs = false
-exclude = ["**/__pycache__", ".venv", ".git"]
+exclude = ["**/__pycache__", ".venv", ".git", "src/app/scip/_proto"]
 
 # ------------------------------------------------------------
 # pytest

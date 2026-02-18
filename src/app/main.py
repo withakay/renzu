@@ -7,6 +7,7 @@ from typing import Any
 from fastapi import FastAPI, Response
 
 from app import __version__
+from app.api.routes import register_routes
 from app.config import get_settings
 from app.dependencies import check_all_dependencies
 from app.logging_config import setup_logging
@@ -23,6 +24,8 @@ app = FastAPI(
 
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(RequestLoggingMiddleware)
+
+register_routes(app)
 
 
 @app.get("/healthz")
