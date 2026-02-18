@@ -117,6 +117,61 @@ class TestV1Routes:
         assert response.status_code == 404
         assert response.json()["error"] == "unknown_repo"
 
+    def test_search_returns_hits_after_index(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        from app.api import routes
+        from app.indexing.qdrant import QdrantClient
+
+        routes.clear_repo_roots()
+
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "hello.txt").write_text("one\ntwo\nthree\n", encoding="utf-8")
+
+        fake_client = FakeAsyncQdrantClient()
+        fake_qdrant = QdrantClient(collection_name="test", vector_size=8, client=fake_client)
+        monkeypatch.setattr(routes, "get_qdrant_client", lambda: fake_qdrant)
+
+        from app.main import app
+
+        client = TestClient(app)
+        index_response = client.post(
+            "/v1/index",
+            json={"repo_id": "test", "path": str(repo_root), "globs": ["**/*.txt"]},
+        )
+        assert index_response.status_code == 200
+
+        search_response = client.post(
+            "/v1/search",
+            json={"query": "two", "repo_id": "test", "top_k": 5},
+        )
+        assert search_response.status_code == 200
+        payload = search_response.json()
+        assert payload["ok"] is True
+        assert payload["repo_id"] == "test"
+        assert payload["query"] == "two"
+        assert payload["hits"]
+        assert payload["hits"][0]["path"] == "hello.txt"
+
+    def test_openapi_includes_v1_endpoints(self) -> None:
+        from app.main import app
+
+        client = TestClient(app)
+        response = client.get("/openapi.json")
+        assert response.status_code == 200
+        paths = response.json().get("paths")
+        assert isinstance(paths, dict)
+        for path in (
+            "/v1/index",
+            "/v1/search",
+            "/v1/snippet",
+            "/v1/glass/list_symbols",
+            "/v1/glass/find_references",
+            "/v1/glass/describe",
+        ):
+            assert path in paths
+
     def test_invalid_index_path_returns_structured_error(
         self, monkeypatch: pytest.MonkeyPatch
     ) -> None:
