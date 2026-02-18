@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.scip.chunker import ScipChunker
 from app.scip.parser import (
     ScipDocument,
     ScipDocumentOccurrence,
@@ -16,6 +17,7 @@ from app.scip.parser import (
 __all__ = [
     "ScipDocument",
     "ScipDocumentOccurrence",
+    "ScipChunker",
     "ScipIndex",
     "ScipParser",
     "ScipRange",
