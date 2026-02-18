@@ -30,6 +30,7 @@ class ChunkPayload(BaseModel):
     end_line: int
     text: str
     content_hash: str
+    symbol_scip: str | None = None
 
 
 class ChunkPoint(BaseModel):

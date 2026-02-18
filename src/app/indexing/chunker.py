@@ -24,6 +24,7 @@ class Chunk:
     end_byte: int
     chunk_type: str
     symbol_hint: str | None
+    symbol_scip: str | None
     content_hash: str
 
 
@@ -259,6 +260,7 @@ class TreeSitterChunker(Chunker):
             end_byte=end_byte,
             chunk_type=chunk_type,
             symbol_hint=symbol_hint,
+            symbol_scip=None,
             content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         )
 

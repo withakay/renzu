@@ -247,6 +247,7 @@ async def _index_repo(
                 end_line=chunk.end_line,
                 text=chunk.text,
                 content_hash=chunk.content_hash,
+                symbol_scip=chunk.symbol_scip,
             )
             point_id = (
                 f"{info.relative_path}:{chunk.start_line}:{chunk.end_line}:{chunk.content_hash}"
