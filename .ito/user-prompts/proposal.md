@@ -9,6 +9,4 @@ This file is for optional, user-authored guidance specific to `ito agent instruc
 
 <!-- ITO:END -->
 
-## Your Proposal Guidance
-
-(Add proposal-specific guidance here: detail level, capability naming, review checklist.)
+// ## Your Proposal Guidance

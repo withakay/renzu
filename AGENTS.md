@@ -69,9 +69,26 @@ git branch -d <change-name> 2>/dev/null || true
 git worktree prune
 ```
 
-
 <!-- ITO:END -->
 
 ## Project Guidance
 
-(Add any project-specific assistant guidance here. Prefer `.ito/user-prompts/guidance.md` for shared instruction guidance and `.ito/user-prompts/<artifact>.md` for phase-specific guidance.)
+## Makefile Workflow
+
+- Use `make install` to set up dependencies via `uv sync`.
+- Use `make check` as the standard quality gate (runs `lint`, `format-check`, and `typecheck`).
+- Use `make test` for fast unit tests, and `make test-all` when integration coverage is needed.
+- For local app development, use `make dev` to run `uvicorn` with reload.
+- Use Docker helpers when required: `make docker-build`, `make docker-up`, `make docker-down`, `make docker-logs`.
+- Generate the OpenAPI artifact with `make openapi-spec`.
+- Before moving to the next implementation task, prefer running `make check` and `make test`, then fix issues before continuing.
+
+
+## Docker Workflow
+
+- **Use orbstack** for local development and testing
+
+## External files
+Access glean-docker for local development and testing of the Glean API here: 
+
+- .local/glean-docker

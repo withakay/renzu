@@ -11,4 +11,14 @@ This file is for optional, user-authored guidance specific to `ito agent instruc
 
 ## Your Tasks Guidance
 
-(Add tasks-specific guidance here: granularity, wave/dependency conventions, verification commands.)
+- Before moving to the next task, run `make check` and `make test`, and fix any issues those commands report.
+- Make regular, small commits as you progress so changes stay easy to review and recover.
+
+## Docker Workflow
+
+- **Use OrbStack** for local development and testing (not Docker Desktop).
+
+## External files
+Access `glean-docker` for local development and testing of the Glean API via this symlink path:
+
+- `./.local/glean-docker`

@@ -57,11 +57,11 @@ ______________________________________________________________________
 - **Updated At**: 2026-02-18
 - **Status**: [ ] pending
 
-### Task 1.4: Add Glean service configuration (from glean-docker)
+### Task 1.4: Add Glean service configuration (from `./.local/glean-docker` symlink)
 - **Files**: `path/to/file.rs`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
+  [Describe what needs to be done, using OrbStack (not Docker Desktop) for local compose workflow]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
