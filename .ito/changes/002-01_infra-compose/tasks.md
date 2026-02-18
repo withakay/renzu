@@ -45,7 +45,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [ ] in-progress
 
 ### Task 1.3: Add Qdrant service configuration
 - **Files**: `path/to/file.rs`
