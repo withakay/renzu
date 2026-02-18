@@ -15,9 +15,18 @@ make test     # Run unit tests
 
 Use the infra-only compose stack to run Qdrant, Glean, and Glass for local development.
 
+Prerequisite: a local checkout of `withakay/glean-docker`.
+By default, the compose file expects a symlink at `./.local/glean-docker` (or set `GLEAN_DOCKER_PATH`).
+
 ```bash
 cp .env.example .env
 docker compose -f docker/infra-compose.yml up -d
+```
+
+Compatibility alias (same stack, root-level compose file):
+
+```bash
+docker compose -f docker-compose.infra.yml up -d
 ```
 
 Include Ollama only when needed:
