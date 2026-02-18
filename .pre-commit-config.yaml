@@ -1,4 +1,17 @@
 repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: check-added-large-files
+        args: ["--maxkb=750"]
+        exclude: ^uv.lock$
+      - id: check-toml
+      - id: check-yaml
+        args:
+          - --unsafe
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.9.6
     hooks:
@@ -6,15 +19,26 @@ repos:
         args: [--fix]
       - id: ruff-format
 
-  - repo: local
+  - repo: https://github.com/DetachHead/basedpyright-prek-mirror
+    rev: 1.38.1
     hooks:
       - id: basedpyright
-        name: basedpyright
-        entry: uv run basedpyright
-        language: system
+
+  - repo: local
+    hooks:
+      - id: local-ruff-check
+        name: ruff check
+        entry: uv run ruff check --force-exclude --fix --exit-non-zero-on-fix
+        require_serial: true
+        language: unsupported
         types: [python]
-        stages: [pre-push]
-        pass_filenames: false
+
+      - id: local-ruff-format
+        name: ruff format
+        entry: uv run ruff format --force-exclude --exit-non-zero-on-format
+        require_serial: true
+        language: unsupported
+        types: [python]
 
       - id: pytest-unit
         name: pytest (unit tests)
