@@ -20,6 +20,9 @@ COMPOSE_FILE := docker-compose.yml
 install: ## Install dependencies with uv
 	uv sync
 
+dev: ## Run development server with uvicorn
+	uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
 test: ## Run unit tests (fast, no Docker)
 	uv run pytest -m unit -v
 

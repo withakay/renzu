@@ -3,7 +3,7 @@ name = "code-context"
 version = "0.1.0"
 description = "Code RAG with vector search and symbol navigation for AI agents"
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
@@ -11,6 +11,9 @@ dependencies = [
     "tree-sitter>=0.24.0",
     "protobuf>=5.29.0",
 ]
+
+[project.scripts]
+serve = "uvicorn:main"
 
 [project.optional-dependencies]
 dev = [
@@ -27,11 +30,18 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 # ------------------------------------------------------------
+# Hatch
+# ------------------------------------------------------------
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/app"]
+
+# ------------------------------------------------------------
 # Ruff
 # ------------------------------------------------------------
 
 [tool.ruff]
-target-version = "py314"
+target-version = "py313"
 src = ["src"]
 line-length = 100
 
@@ -62,7 +72,7 @@ known-first-party = ["app"]
 # ------------------------------------------------------------
 
 [tool.basedpyright]
-pythonVersion = "3.14"
+pythonVersion = "3.13"
 typeCheckingMode = "strict"
 reportMissingImports = true
 reportMissingTypeStubs = false
@@ -85,8 +95,8 @@ addopts = "-ra -q --strict-markers"
 # uv
 # ------------------------------------------------------------
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
     "pytest>=8.3.0",
     "pytest-asyncio>=0.25.0",
     "httpx>=0.28.0",
