@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+.ito/session.json
+.ito/.state/audit/.session
+!.ito/.state/audit/
+.ito/config.local.json
+.local/ito/config.json
