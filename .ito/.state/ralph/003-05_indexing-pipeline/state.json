@@ -1,0 +1,13 @@
+{
+  "changeId": "003-05_indexing-pipeline",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771453819248,
+      "duration": 43432,
+      "completionPromiseFound": false,
+      "fileChangesCount": 1
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/003-05_indexing-pipeline/context.md"
+}
