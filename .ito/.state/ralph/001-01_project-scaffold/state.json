@@ -1,0 +1,13 @@
+{
+  "changeId": "001-01_project-scaffold",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771434847023,
+      "duration": 633392,
+      "completionPromiseFound": true,
+      "fileChangesCount": 7
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/001-01_project-scaffold/context.md"
+}
