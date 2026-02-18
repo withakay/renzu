@@ -179,17 +179,25 @@ class TestOpenAIEmbedder:
 @pytest.mark.asyncio
 class TestOllamaEmbedder:
     async def test_posts_all_texts_in_one_request(self) -> None:
-        request_count = 0
+        request_paths: list[str] = []
 
         def handler(request: httpx.Request) -> httpx.Response:
-            nonlocal request_count
-            request_count += 1
-            assert request.url.path.endswith("/api/embed")
+            request_paths.append(request.url.path)
 
+            if request.url.path.endswith("/api/tags"):
+                return httpx.Response(
+                    200,
+                    json={
+                        "models": [
+                            {"name": "nomic-embed-text:latest"},
+                        ]
+                    },
+                )
+
+            assert request.url.path.endswith("/api/embed")
             payload = json.loads(request.content.decode("utf-8"))
             assert payload["model"] == "nomic-embed-text"
             assert payload["input"] == ["t1", "t2"]
-
             return httpx.Response(
                 200,
                 json={
@@ -209,7 +217,7 @@ class TestOllamaEmbedder:
             )
             vectors = await embedder.embed(["t1", "t2"])
 
-        assert request_count == 1
+        assert request_paths == ["/api/tags", "/api/embed"]
         assert vectors == [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
 
     async def test_raises_descriptive_error_on_connection_failure(self) -> None:
@@ -225,6 +233,71 @@ class TestOllamaEmbedder:
             )
             with pytest.raises(RuntimeError, match=r"Ollama is not reachable"):
                 await embedder.embed(["t1"])
+
+    async def test_raises_when_model_not_pulled(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.path.endswith("/api/tags"):
+                return httpx.Response(200, json={"models": [{"name": "some-other-model:latest"}]})
+            return httpx.Response(500)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="http://ollama.test", transport=transport) as client:
+            embedder: EmbeddingProvider = OllamaEmbedder(
+                client=client,
+                model="nomic-embed-text",
+            )
+            with pytest.raises(RuntimeError, match=r"ollama pull"):
+                await embedder.embed(["t1"])
+
+    async def test_verifies_model_only_once(self) -> None:
+        tag_calls = 0
+        embed_calls = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal tag_calls, embed_calls
+
+            if request.url.path.endswith("/api/tags"):
+                tag_calls += 1
+                return httpx.Response(200, json={"models": [{"name": "nomic-embed-text:latest"}]})
+
+            if request.url.path.endswith("/api/embed"):
+                embed_calls += 1
+                return httpx.Response(200, json={"embeddings": [[0.0]]})
+
+            return httpx.Response(404)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="http://ollama.test", transport=transport) as client:
+            embedder: EmbeddingProvider = OllamaEmbedder(
+                client=client,
+                model="nomic-embed-text",
+                vector_size=1,
+            )
+            _ = await embedder.embed(["t1"])
+            _ = await embedder.embed(["t2"])
+
+        assert tag_calls == 1
+        assert embed_calls == 2
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+class TestOllamaHealthCheck:
+    async def test_health_check_calls_version_endpoint(self) -> None:
+        request_paths: list[str] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            request_paths.append(request.url.path)
+            if request.url.path.endswith("/api/version"):
+                return httpx.Response(200, json={"version": "0.0.0"})
+            return httpx.Response(404)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="http://ollama.test", transport=transport) as client:
+            embedder = OllamaEmbedder(client=client)
+            await embedder.health_check()
+
+        assert request_paths == ["/api/version"]
 
 
 @pytest.mark.unit

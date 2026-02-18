@@ -210,6 +210,100 @@ class OllamaEmbedder:
 
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
     _last_request_monotonic: float | None = field(default=None, init=False, repr=False)
+    _verified_models: set[str] = field(default_factory=set, init=False, repr=False)
+    _verify_lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
+
+    @staticmethod
+    def _model_matches_tag(model: str, tag: str) -> bool:
+        if model == tag:
+            return True
+        # Ollama commonly reports tags like "nomic-embed-text:latest".
+        return bool(":" in tag and model == tag.split(":", 1)[0])
+
+    async def health_check(self) -> None:
+        """Raise a descriptive error if Ollama is unreachable."""
+
+        settings = get_settings()
+        base_url = self.base_url or settings.ollama_url
+
+        try:
+            if self.client is None:
+                async with httpx.AsyncClient(base_url=base_url, timeout=2.0) as client:
+                    response = await client.get("/api/version")
+            else:
+                response = await self.client.get("/api/version")
+        except httpx.TimeoutException as exc:
+            raise RuntimeError(f"Timed out connecting to Ollama at {base_url}") from exc
+        except httpx.ConnectError as exc:
+            raise RuntimeError(
+                f"Ollama is not reachable at {base_url} (is the server running?)"
+            ) from exc
+        except httpx.HTTPError as exc:
+            raise RuntimeError(f"Failed to check Ollama health at {base_url}") from exc
+
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            raise RuntimeError(
+                f"Ollama returned HTTP {status} from {base_url}/api/version"
+            ) from exc
+
+    async def _ensure_model_available(self, *, model: str, base_url: str) -> None:
+        key = f"{base_url}::{model}"
+        if key in self._verified_models:
+            return
+
+        async with self._verify_lock:
+            if key in self._verified_models:
+                return
+
+            try:
+                if self.client is None:
+                    async with httpx.AsyncClient(base_url=base_url, timeout=2.0) as client:
+                        response = await client.get("/api/tags")
+                else:
+                    response = await self.client.get("/api/tags")
+            except httpx.TimeoutException as exc:
+                raise RuntimeError(f"Timed out connecting to Ollama at {base_url}") from exc
+            except httpx.ConnectError as exc:
+                raise RuntimeError(
+                    f"Ollama is not reachable at {base_url} (is the server running?)"
+                ) from exc
+            except httpx.HTTPError as exc:
+                raise RuntimeError(f"Failed to query Ollama models at {base_url}") from exc
+
+            try:
+                response.raise_for_status()
+            except httpx.HTTPStatusError as exc:
+                status = exc.response.status_code
+                raise RuntimeError(
+                    f"Ollama returned HTTP {status} from {base_url}/api/tags"
+                ) from exc
+
+            raw_data = response.json()
+            if not isinstance(raw_data, dict):
+                raise TypeError("Ollama tags response must be an object")
+            data = cast("dict[str, Any]", raw_data)
+            raw_models = data.get("models")
+            if not isinstance(raw_models, list):
+                raise TypeError("Ollama tags response missing 'models' list")
+
+            available: list[str] = []
+            for item in cast("list[object]", raw_models):
+                if not isinstance(item, dict):
+                    continue
+                name = cast("dict[str, Any]", item).get("name")
+                if isinstance(name, str) and name:
+                    available.append(name)
+
+            if not any(self._model_matches_tag(model, tag) for tag in available):
+                raise RuntimeError(
+                    "Ollama model is not available locally: "
+                    f"{model}. Run `ollama pull {model}` (or set OLLAMA_EMBEDDING_MODEL to an installed model)."
+                )
+
+            self._verified_models.add(key)
 
     async def _sleep_if_needed(self, *, min_interval_seconds: float) -> None:
         if min_interval_seconds <= 0:
@@ -293,9 +387,13 @@ class OllamaEmbedder:
 
         settings = get_settings()
 
-        model = self.model or settings.ollama_embedding_model
+        model = (self.model or settings.ollama_embedding_model).strip()
+        if not model:
+            raise ValueError("ollama_embedding_model must not be empty")
         base_url = self.base_url or settings.ollama_url
         expected_size = self.vector_size or settings.embedding_vector_size
+
+        await self._ensure_model_available(model=model, base_url=base_url)
 
         batch_size = self.batch_size or settings.embedding_batch_size
         if batch_size <= 0:
