@@ -34,7 +34,7 @@ def _coerce_vector(raw: Any, *, expected_size: int) -> list[float]:
     if not isinstance(raw, list):
         raise TypeError("Embedding vector must be a list")
 
-    raw_values = cast("list[object]", raw)
+    raw_values = cast(list[object], raw)
     vector: list[float] = []
     for value in raw_values:
         if isinstance(value, (int, float)):
@@ -96,18 +96,18 @@ class OpenAIEmbedder:
         raw_data = response.json()
         if not isinstance(raw_data, dict):
             raise TypeError("OpenAI embeddings response must be an object")
-        data = cast("dict[str, Any]", raw_data)
+        data = cast(dict[str, Any], raw_data)
 
         raw_items = data.get("data")
         if not isinstance(raw_items, list):
             raise TypeError("OpenAI embeddings response missing 'data' list")
 
         vectors_by_index: dict[int, list[float]] = {}
-        for item in cast("list[object]", raw_items):
+        for item in cast(list[object], raw_items):
             if not isinstance(item, dict):
                 continue
 
-            item_dict = cast("dict[str, Any]", item)
+            item_dict = cast(dict[str, Any], item)
             index = item_dict.get("index")
             embedding = item_dict.get("embedding")
             if not isinstance(index, int):

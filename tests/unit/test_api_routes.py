@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -51,13 +51,10 @@ class FakeAsyncQdrantClient:
     ) -> list[object]:
         _ = collection_name
         _ = query_vector
-        repo_id = None
         if query_filter is not None:
             _ = query_filter
 
         candidates = self._points
-        if isinstance(repo_id, str):
-            _ = repo_id
 
         scored: list[object] = []
         for index, point in enumerate(candidates[:limit]):
