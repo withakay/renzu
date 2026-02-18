@@ -10,6 +10,7 @@ from app import __version__
 from app.config import get_settings
 from app.dependencies import check_all_dependencies
 from app.logging_config import setup_logging
+from app.middleware import CorrelationIdMiddleware, RequestLoggingMiddleware
 
 settings = get_settings()
 setup_logging(settings.log_level)
@@ -19,6 +20,9 @@ app = FastAPI(
     description="Code RAG with vector search and symbol navigation for AI agents",
     version=__version__,
 )
+
+app.add_middleware(CorrelationIdMiddleware)
+app.add_middleware(RequestLoggingMiddleware)
 
 
 @app.get("/healthz")

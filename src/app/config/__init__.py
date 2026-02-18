@@ -19,6 +19,7 @@ class Settings(BaseSettings):
 
     qdrant_url: str = "http://localhost:6333"
     http_port: int = 8000
+    mcp_port: int = 9000
     log_level: str = "INFO"
     qdrant_collection: str = "code-context"
 

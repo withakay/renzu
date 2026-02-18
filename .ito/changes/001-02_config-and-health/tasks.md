@@ -32,7 +32,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ______________________________________________________________________
 
@@ -45,7 +45,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Add environment variable loading (QDRANT_URL, EMBEDDING_PROVIDER, etc.)
 - **Files**: `path/to/file.rs`
@@ -55,7 +55,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Implement /healthz endpoint (liveness)
 - **Files**: `path/to/file.rs`
@@ -65,7 +65,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Implement /readyz endpoint (readiness with dependency checks)
 - **Files**: `path/to/file.rs`
@@ -75,7 +75,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.6: Configure structured JSON logging with loguru
 - **Files**: `path/to/file.rs`
@@ -85,7 +85,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
@@ -100,7 +100,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Write unit tests for config and health endpoints
 - **Files**: `path/to/file.rs`
@@ -110,7 +110,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -120,4 +120,4 @@ ______________________________________________________________________
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete

@@ -22,6 +22,10 @@ class CustomJsonFormatter(JsonFormatter):
         super().add_fields(log_data, record, message_dict)
         log_data["level"] = record.levelname
         log_data["logger"] = record.name
+        for attr in ("method", "path", "status_code", "duration_ms", "correlation_id"):
+            value = getattr(record, attr, None)
+            if value is not None:
+                log_data[attr] = value
 
 
 def setup_logging(level: str = "INFO") -> None:

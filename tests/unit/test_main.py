@@ -61,6 +61,7 @@ class TestConfig:
         settings = Settings()
         assert settings.qdrant_url == "http://localhost:6333"
         assert settings.http_port == 8000
+        assert settings.mcp_port == 9000
         assert settings.log_level == "INFO"
         assert settings.qdrant_collection == "code-context"
 
@@ -75,3 +76,24 @@ class TestConfig:
         assert settings.qdrant_url == "http://qdrant:6333"
         assert settings.http_port == 9000
         assert settings.log_level == "DEBUG"
+
+
+@pytest.mark.unit
+class TestCorrelationIdMiddleware:
+    def test_correlation_id_generated_if_not_provided(self) -> None:
+        from app.main import app
+
+        client = TestClient(app)
+        response = client.get("/healthz")
+        assert response.status_code == 200
+        assert "X-Correlation-ID" in response.headers
+        assert len(response.headers["X-Correlation-ID"]) == 36
+
+    def test_correlation_id_preserved_if_provided(self) -> None:
+        from app.main import app
+
+        client = TestClient(app)
+        test_id = "test-correlation-123"
+        response = client.get("/healthz", headers={"X-Correlation-ID": test_id})
+        assert response.status_code == 200
+        assert response.headers["X-Correlation-ID"] == test_id
