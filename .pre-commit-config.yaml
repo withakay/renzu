@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.6
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  - repo: local
+    hooks:
+      - id: basedpyright
+        name: basedpyright
+        entry: uv run basedpyright
+        language: system
+        types: [python]
+        stages: [pre-push]
+        pass_filenames: false
+
+      - id: pytest-unit
+        name: pytest (unit tests)
+        entry: uv run pytest -m unit -v
+        language: system
+        types: [python]
+        stages: [pre-push]
+        pass_filenames: false
