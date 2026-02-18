@@ -15,9 +15,9 @@ from app.scip.parser import (
 )
 
 __all__ = [
+    "ScipChunker",
     "ScipDocument",
     "ScipDocumentOccurrence",
-    "ScipChunker",
     "ScipIndex",
     "ScipParser",
     "ScipRange",

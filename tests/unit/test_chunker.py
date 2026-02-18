@@ -61,6 +61,7 @@ class Greeter:
         assert chunk.start_byte >= 0
         assert chunk.end_byte > chunk.start_byte
         assert chunk.chunk_type
+        assert chunk.symbol_scip is None
         assert chunk.content_hash
 
     def test_large_chunk_is_split_by_max_chunk_bytes(self) -> None:
