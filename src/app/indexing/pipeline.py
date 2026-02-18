@@ -6,11 +6,12 @@ This module wires together discovery (FileWalker), chunking (Chunker), embedding
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, TypeVar, runtime_checkable
 
 from app.indexing.chunker import Chunk, Chunker, TreeSitterChunker
 from app.indexing.embedder import EmbeddingProvider, get_embedder
@@ -18,7 +19,9 @@ from app.indexing.qdrant import ChunkPayload, ChunkPoint, get_qdrant_client
 from app.indexing.walker import FileInfo, FileWalker
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Awaitable, Callable, Sequence
+
+T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
@@ -69,11 +72,23 @@ class IndexingPipeline:
         exclude_globs: list[str] | None = None,
         dedupe_by_content_hash: bool = True,
         log_every_files: int = 25,
+        embed_retries: int = 3,
+        embed_retry_delay_seconds: float = 0.5,
+        upsert_retries: int = 3,
+        upsert_retry_delay_seconds: float = 0.5,
     ) -> None:
         if upsert_batch_size <= 0:
             raise ValueError("upsert_batch_size must be > 0")
         if log_every_files <= 0:
             raise ValueError("log_every_files must be > 0")
+        if embed_retries <= 0:
+            raise ValueError("embed_retries must be > 0")
+        if embed_retry_delay_seconds < 0:
+            raise ValueError("embed_retry_delay_seconds must be >= 0")
+        if upsert_retries <= 0:
+            raise ValueError("upsert_retries must be > 0")
+        if upsert_retry_delay_seconds < 0:
+            raise ValueError("upsert_retry_delay_seconds must be >= 0")
 
         self._qdrant = qdrant or get_qdrant_client()
         self._embedder = embedder or get_embedder()
@@ -88,6 +103,38 @@ class IndexingPipeline:
         ]
         self._dedupe_by_content_hash = dedupe_by_content_hash
         self._log_every_files = log_every_files
+        self._embed_retries = embed_retries
+        self._embed_retry_delay_seconds = embed_retry_delay_seconds
+        self._upsert_retries = upsert_retries
+        self._upsert_retry_delay_seconds = upsert_retry_delay_seconds
+
+    async def _with_retry(
+        self,
+        operation: Callable[[], Awaitable[T]],
+        *,
+        retries: int,
+        delay_seconds: float,
+        context: str,
+    ) -> T:
+        last_error: Exception | None = None
+        for attempt in range(1, retries + 1):
+            try:
+                return await operation()
+            except Exception as exc:
+                last_error = exc
+                if attempt >= retries:
+                    raise
+                logger.warning(
+                    "Retrying operation context=%s attempt=%d/%d error=%s",
+                    context,
+                    attempt,
+                    retries,
+                    str(exc),
+                )
+                if delay_seconds:
+                    await asyncio.sleep(delay_seconds)
+
+        raise RuntimeError("Retry loop ended unexpectedly") from last_error
 
     def _build_walker(self, *, globs: list[str] | None) -> FileWalker:
         if self._walker is not None:
@@ -138,11 +185,18 @@ class IndexingPipeline:
         seen_hashes: set[str] = set()
         buffer: list[ChunkPoint] = []
 
-        async def flush() -> None:
+        async def flush(*, context: str) -> None:
             nonlocal indexed_chunks
             if not buffer:
                 return
-            await self._qdrant.upsert_points(repo_id, buffer)
+
+            points = list(buffer)
+            await self._with_retry(
+                lambda: self._qdrant.upsert_points(repo_id, points),
+                retries=self._upsert_retries,
+                delay_seconds=self._upsert_retry_delay_seconds,
+                context=context,
+            )
             indexed_chunks += len(buffer)
             buffer.clear()
 
@@ -208,8 +262,12 @@ class IndexingPipeline:
                 continue
 
             try:
-                vectors: list[list[float]] = await self._embedder.embed(
-                    [chunk.text for chunk in kept_chunks]
+                texts = [chunk.text for chunk in kept_chunks]
+                vectors: list[list[float]] = await self._with_retry(
+                    lambda texts=texts: self._embedder.embed(texts),
+                    retries=self._embed_retries,
+                    delay_seconds=self._embed_retry_delay_seconds,
+                    context=f"embed:{info.relative_path}",
                 )
             except Exception as exc:
                 errors.append(IndexingFileError(relative_path=info.relative_path, error=str(exc)))
@@ -254,7 +312,7 @@ class IndexingPipeline:
 
                 if len(buffer) >= self._upsert_batch_size:
                     try:
-                        await flush()
+                        await flush(context=f"upsert:{info.relative_path}")
                     except Exception as exc:
                         errors.append(
                             IndexingFileError(relative_path=info.relative_path, error=str(exc))
@@ -263,7 +321,7 @@ class IndexingPipeline:
                         break
 
         try:
-            await flush()
+            await flush(context="upsert:(final_flush)")
         except Exception as exc:
             errors.append(IndexingFileError(relative_path="(flush)", error=str(exc)))
             buffer.clear()
