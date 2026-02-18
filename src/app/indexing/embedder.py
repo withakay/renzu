@@ -32,7 +32,7 @@ def _content_hash(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
-def _coerce_vector(raw: Any, *, expected_size: int) -> list[float]:
+def _coerce_vector(raw: Any, *, expected_size: int | None) -> list[float]:
     if not isinstance(raw, list):
         raise TypeError("Embedding vector must be a list")
 
@@ -43,7 +43,7 @@ def _coerce_vector(raw: Any, *, expected_size: int) -> list[float]:
             vector.append(float(value))
             continue
         raise TypeError("Embedding vector elements must be numbers")
-    if len(vector) != expected_size:
+    if expected_size is not None and len(vector) != expected_size:
         raise ValueError(f"Expected embedding size {expected_size}, got {len(vector)}")
     return vector
 
@@ -193,6 +193,143 @@ class OpenAIEmbedder:
         return vectors
 
 
+@dataclass(slots=True)
+class OllamaEmbedder:
+    """Ollama embeddings API implementation.
+
+    Uses the local Ollama HTTP API (`POST /api/embed`).
+    """
+
+    model: str | None = None
+    base_url: str | None = None
+    vector_size: int | None = None
+    batch_size: int | None = None
+    min_interval_seconds: float | None = None
+    timeout_seconds: float = 30.0
+    client: httpx.AsyncClient | None = None
+
+    _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
+    _last_request_monotonic: float | None = field(default=None, init=False, repr=False)
+
+    async def _sleep_if_needed(self, *, min_interval_seconds: float) -> None:
+        if min_interval_seconds <= 0:
+            return
+
+        last = self._last_request_monotonic
+        if last is None:
+            return
+
+        now = time.monotonic()
+        delta = now - last
+        remaining = min_interval_seconds - delta
+        if remaining > 0:
+            await asyncio.sleep(remaining)
+
+    async def _embed_batch(
+        self,
+        texts: list[str],
+        *,
+        model: str,
+        base_url: str,
+        expected_size: int | None,
+        min_interval_seconds: float,
+    ) -> list[list[float]]:
+        headers = {"Content-Type": "application/json"}
+        payload = {
+            "model": model,
+            "input": texts,
+        }
+
+        async with self._lock:
+            await self._sleep_if_needed(min_interval_seconds=min_interval_seconds)
+            try:
+                if self.client is None:
+                    async with httpx.AsyncClient(
+                        base_url=base_url, timeout=self.timeout_seconds
+                    ) as client:
+                        response = await client.post("/api/embed", headers=headers, json=payload)
+                else:
+                    response = await self.client.post("/api/embed", headers=headers, json=payload)
+                self._last_request_monotonic = time.monotonic()
+            except httpx.TimeoutException as exc:
+                raise RuntimeError(f"Timed out connecting to Ollama at {base_url}") from exc
+            except httpx.ConnectError as exc:
+                raise RuntimeError(
+                    f"Ollama is not reachable at {base_url} (is the server running?)"
+                ) from exc
+
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            status = exc.response.status_code
+            raise RuntimeError(f"Ollama returned HTTP {status} from {base_url}/api/embed") from exc
+
+        raw_data = response.json()
+        if not isinstance(raw_data, dict):
+            raise TypeError("Ollama embed response must be an object")
+        data = cast("dict[str, Any]", raw_data)
+
+        raw_embeddings = data.get("embeddings")
+        if raw_embeddings is None and "embedding" in data:
+            raw_embeddings = [data.get("embedding")]
+
+        if not isinstance(raw_embeddings, list):
+            raise TypeError("Ollama embed response missing 'embeddings' list")
+
+        embeddings_list = cast("list[object]", raw_embeddings)
+        if len(embeddings_list) != len(texts):
+            raise RuntimeError(
+                f"Ollama embed response returned {len(embeddings_list)} vectors for {len(texts)} texts"
+            )
+
+        vectors: list[list[float]] = []
+        for raw_vector in embeddings_list:
+            vectors.append(_coerce_vector(raw_vector, expected_size=expected_size))
+        return vectors
+
+    async def embed(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+
+        settings = get_settings()
+
+        model = self.model or settings.ollama_embedding_model
+        base_url = self.base_url or settings.ollama_url
+        expected_size = self.vector_size or settings.embedding_vector_size
+
+        batch_size = self.batch_size or settings.embedding_batch_size
+        if batch_size <= 0:
+            raise ValueError("embedding_batch_size must be > 0")
+
+        min_interval_seconds = self.min_interval_seconds
+        if min_interval_seconds is None:
+            min_interval_seconds = settings.embedding_min_interval_seconds
+
+        if len(texts) <= batch_size:
+            return await self._embed_batch(
+                texts,
+                model=model,
+                base_url=base_url,
+                expected_size=expected_size,
+                min_interval_seconds=min_interval_seconds,
+            )
+
+        vectors: list[list[float]] = []
+        for start in range(0, len(texts), batch_size):
+            batch = texts[start : start + batch_size]
+            vectors.extend(
+                await self._embed_batch(
+                    batch,
+                    model=model,
+                    base_url=base_url,
+                    expected_size=expected_size,
+                    min_interval_seconds=min_interval_seconds,
+                )
+            )
+
+        return vectors
+
+
 class CacheEmbedder:
     """Embedding provider wrapper with in-memory content-hash caching."""
 
@@ -242,6 +379,8 @@ def get_embedder() -> EmbeddingProvider:
     match provider_name:
         case "openai":
             provider: EmbeddingProvider = OpenAIEmbedder()
+        case "ollama":
+            provider = OllamaEmbedder()
         case _:
             raise RuntimeError(f"Unsupported embedding provider: {settings.embedding_provider}")
 

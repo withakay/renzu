@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Embedding provider configuration.
     embedding_provider: str = "openai"
     embedding_cache_enabled: bool = True
+    # Ollama embedding configuration.
+    ollama_url: str = "http://localhost:11434"
+    ollama_embedding_model: str = "nomic-embed-text"
     # Maximum number of texts per embeddings request.
     embedding_batch_size: int = 96
     # Minimum delay between embedding requests (0 disables rate limiting).

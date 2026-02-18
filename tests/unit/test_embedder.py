@@ -10,7 +10,7 @@ import httpx
 import pytest
 
 from app.config import get_settings
-from app.indexing.embedder import CacheEmbedder, EmbeddingProvider, OpenAIEmbedder
+from app.indexing.embedder import CacheEmbedder, EmbeddingProvider, OllamaEmbedder, OpenAIEmbedder
 
 
 @dataclass
@@ -176,6 +176,58 @@ class TestOpenAIEmbedder:
 
 
 @pytest.mark.unit
+@pytest.mark.asyncio
+class TestOllamaEmbedder:
+    async def test_posts_all_texts_in_one_request(self) -> None:
+        request_count = 0
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            nonlocal request_count
+            request_count += 1
+            assert request.url.path.endswith("/api/embed")
+
+            payload = json.loads(request.content.decode("utf-8"))
+            assert payload["model"] == "nomic-embed-text"
+            assert payload["input"] == ["t1", "t2"]
+
+            return httpx.Response(
+                200,
+                json={
+                    "embeddings": [
+                        [0.0, 1.0, 2.0],
+                        [3.0, 4.0, 5.0],
+                    ]
+                },
+            )
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="http://ollama.test", transport=transport) as client:
+            embedder: EmbeddingProvider = OllamaEmbedder(
+                client=client,
+                model="nomic-embed-text",
+                vector_size=3,
+            )
+            vectors = await embedder.embed(["t1", "t2"])
+
+        assert request_count == 1
+        assert vectors == [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
+
+    async def test_raises_descriptive_error_on_connection_failure(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("boom", request=request)
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="http://ollama.test", transport=transport) as client:
+            embedder: EmbeddingProvider = OllamaEmbedder(
+                client=client,
+                model="nomic-embed-text",
+                vector_size=1,
+            )
+            with pytest.raises(RuntimeError, match=r"Ollama is not reachable"):
+                await embedder.embed(["t1"])
+
+
+@pytest.mark.unit
 class TestEmbedderFactory:
     def test_get_embedder_respects_provider_and_cache_config(
         self, monkeypatch: pytest.MonkeyPatch
@@ -194,6 +246,16 @@ class TestEmbedderFactory:
         get_embedder.cache_clear()
         provider = get_embedder()
         assert isinstance(provider, CacheEmbedder)
+
+    def test_get_embedder_supports_ollama_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from app.indexing.embedder import OllamaEmbedder, get_embedder
+
+        monkeypatch.setenv("EMBEDDING_PROVIDER", "ollama")
+        monkeypatch.setenv("EMBEDDING_CACHE_ENABLED", "false")
+        get_settings.cache_clear()
+        get_embedder.cache_clear()
+        provider = get_embedder()
+        assert isinstance(provider, OllamaEmbedder)
 
     def test_get_embedder_raises_on_unknown_provider(self, monkeypatch: pytest.MonkeyPatch) -> None:
         from app.indexing.embedder import get_embedder

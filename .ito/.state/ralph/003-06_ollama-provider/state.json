@@ -1,0 +1,13 @@
+{
+  "changeId": "003-06_ollama-provider",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771455369594,
+      "duration": 34395,
+      "completionPromiseFound": false,
+      "fileChangesCount": 1
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/003-06_ollama-provider/context.md"
+}
