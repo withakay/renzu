@@ -9,6 +9,7 @@ import pytest
 from app.glass.service import GlassResponse
 from app.retrieval.search import Citation, SearchResult
 from app.retrieval.snippet import Snippet
+from app.zoekt.client import ZoektFileMatch, ZoektLineMatch
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -136,6 +137,34 @@ class _FakeUnavailableGlassService:
         return await self.symbols_in_file(request)
 
 
+class _FakeZoektClient:
+    async def search(
+        self,
+        query: str,
+        *,
+        num: int = 20,
+        file_pattern: str | None = None,
+    ) -> list[ZoektFileMatch]:
+        _ = query
+        _ = num
+        _ = file_pattern
+        return [
+            ZoektFileMatch(
+                repo_id="repo-1",
+                path="src/ping.py",
+                score=0.88,
+                line_matches=(
+                    ZoektLineMatch(
+                        line_number=42,
+                        line="def ping() -> str:",
+                        start_column=4,
+                        end_column=8,
+                    ),
+                ),
+            )
+        ]
+
+
 @pytest.mark.unit
 def test_create_server_uses_default_metadata() -> None:
     from app import __version__
@@ -150,6 +179,7 @@ def test_create_server_uses_default_metadata() -> None:
     assert server.init_kwargs["version"] == __version__
     assert server.init_kwargs["capabilities"] == {"tools": {}}
     assert "code_search" in server.tools
+    assert "code_search_lexical" in server.tools
     assert "code_snippet" in server.tools
     assert "symbols_in_file" in server.tools
     assert "symbol_definition" in server.tools
@@ -240,6 +270,66 @@ async def test_code_search_validates_required_parameters() -> None:
 
     with pytest.raises(ValueError, match="top_k must be <= 100"):
         await server.tools["code_search"](query="ping", repo_id="repo-1", top_k=101)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_code_search_lexical_tool_formats_results_and_citations() -> None:
+    from app.mcp.server import create_mcp_server
+    from app.mcp.tools.retrieval import register_retrieval_tools
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+    register_retrieval_tools(
+        server=server,
+        search_service=_FakeSearchService(),
+        snippet_service=_FakeSnippetService(),
+        zoekt_client=_FakeZoektClient(),
+    )
+
+    payload = await server.tools["code_search_lexical"](
+        query="ping AND function",
+        repo_id="repo-1",
+        file_pattern="*.py",
+        top_k=5,
+    )
+
+    assert payload["query"] == "ping AND function"
+    assert payload["repo_id"] == "repo-1"
+    assert payload["results"][0]["path"] == "src/ping.py"
+    assert payload["results"][0]["start_line"] == 42
+    assert payload["results"][0]["citation"] == "repo-1:src/ping.py:42-42"
+    assert payload["citations"] == ["repo-1:src/ping.py:42-42"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_code_search_lexical_reports_unavailability() -> None:
+    from app.mcp.server import create_mcp_server
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+
+    payload = await server.tools["code_search_lexical"](
+        query="foo",
+        repo_id="repo-1",
+    )
+
+    assert payload["results"] == []
+    assert payload["error"] is not None
+    assert "Zoekt" in payload["error"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_code_search_lexical_validates_parameters() -> None:
+    from app.mcp.server import create_mcp_server
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+
+    with pytest.raises(ValueError, match="query must not be empty"):
+        await server.tools["code_search_lexical"](query=" ", repo_id="repo-1")
+
+    with pytest.raises(ValueError, match="repo_id must not be empty"):
+        await server.tools["code_search_lexical"](query="foo", repo_id=" ")
 
 
 @pytest.mark.unit

@@ -42,6 +42,7 @@ def test_retrieval_tools_registered_with_expected_schema() -> None:
 
     tools = {tool.name: tool for tool in server._tool_manager.list_tools()}  # pyright: ignore[reportPrivateUsage]
     assert "code_search" in tools
+    assert "code_search_lexical" in tools
     assert "code_snippet" in tools
     assert "symbols_in_file" in tools
     assert "symbol_definition" in tools
@@ -52,6 +53,11 @@ def test_retrieval_tools_registered_with_expected_schema() -> None:
     assert set(search_schema["required"]) == {"query", "repo_id"}
     assert "top_k" in search_schema["properties"]
     assert search_schema["properties"]["top_k"]["default"] == 10
+
+    lexical_schema = tools["code_search_lexical"].parameters
+    assert lexical_schema["type"] == "object"
+    assert set(lexical_schema["required"]) == {"query", "repo_id"}
+    assert "file_pattern" in lexical_schema["properties"]
 
     snippet_schema = tools["code_snippet"].parameters
     assert snippet_schema["type"] == "object"

@@ -7,6 +7,7 @@ from typing import Any, Protocol, cast
 
 from app.retrieval.search import get_search_service
 from app.retrieval.snippet import Snippet, get_snippet_service
+from app.zoekt.client import ZoektFileMatch, ZoektLineMatch, get_zoekt_client
 
 MAX_TOP_K = 100
 
@@ -33,6 +34,16 @@ class SnippetToolService(Protocol):
         end_line: int,
         context_lines: int = 0,
     ) -> Snippet: ...
+
+
+class ZoektToolClient(Protocol):
+    async def search(
+        self,
+        query: str,
+        *,
+        num: int = 20,
+        file_pattern: str | None = None,
+    ) -> list[ZoektFileMatch]: ...
 
 
 def _normalize_required(value: str, *, field_name: str) -> str:
@@ -73,6 +84,32 @@ def _snippet_response(*, repo_id: str, path: str, snippet: Snippet) -> dict[str,
     }
 
 
+def _lexical_result(
+    *,
+    repo_id: str,
+    path: str,
+    score: float,
+    line_match: ZoektLineMatch,
+) -> dict[str, Any]:
+    citation = _format_search_citation(
+        repo_id=repo_id,
+        path=path,
+        start_line=line_match.line_number,
+        end_line=line_match.line_number,
+    )
+    return {
+        "text": line_match.line,
+        "match_text": line_match.line,
+        "path": path,
+        "start_line": line_match.line_number,
+        "end_line": line_match.line_number,
+        "score": score,
+        "language": None,
+        "chunk_type": "lexical",
+        "citation": citation,
+    }
+
+
 def _register_tool(
     *, server: Any, name: str, description: str, handler: Callable[..., Any]
 ) -> None:
@@ -91,8 +128,10 @@ def register_retrieval_tools(
     server: Any,
     search_service: SearchToolService | None = None,
     snippet_service: SnippetToolService | None = None,
+    zoekt_client: ZoektToolClient | None = None,
     search_service_getter: Callable[[], SearchToolService] = get_search_service,
     snippet_service_getter: Callable[[], SnippetToolService] = get_snippet_service,
+    zoekt_client_getter: Callable[[], ZoektToolClient | None] = get_zoekt_client,
 ) -> None:
     """Register retrieval tools on the provided MCP server."""
 
@@ -175,6 +214,59 @@ def register_retrieval_tools(
         )
         return _snippet_response(repo_id=normalized_repo_id, path=normalized_path, snippet=snippet)
 
+    async def code_search_lexical(
+        query: str,
+        repo_id: str,
+        file_pattern: str | None = None,
+        top_k: int = 10,
+    ) -> dict[str, Any]:
+        normalized_query = _normalize_required(query, field_name="query")
+        normalized_repo_id = _normalize_required(repo_id, field_name="repo_id")
+        normalized_file_pattern = _normalize_optional(file_pattern)
+        if top_k < 1:
+            raise ValueError("top_k must be >= 1")
+        if top_k > MAX_TOP_K:
+            raise ValueError(f"top_k must be <= {MAX_TOP_K}")
+
+        resolved_zoekt_client = zoekt_client or zoekt_client_getter()
+        if resolved_zoekt_client is None:
+            return {
+                "query": normalized_query,
+                "repo_id": normalized_repo_id,
+                "results": [],
+                "citations": [],
+                "error": "Zoekt is unavailable (ZOEKT_URL not configured)",
+            }
+
+        lexical_matches = await resolved_zoekt_client.search(
+            normalized_query,
+            num=top_k,
+            file_pattern=normalized_file_pattern,
+        )
+
+        results: list[dict[str, Any]] = []
+        citations: list[str] = []
+        for file_match in lexical_matches:
+            if file_match.repo_id != normalized_repo_id:
+                continue
+            for line_match in file_match.line_matches:
+                result = _lexical_result(
+                    repo_id=file_match.repo_id,
+                    path=file_match.path,
+                    score=file_match.score,
+                    line_match=line_match,
+                )
+                results.append(result)
+                citations.append(cast(str, result["citation"]))
+
+        return {
+            "query": normalized_query,
+            "repo_id": normalized_repo_id,
+            "results": results,
+            "citations": citations,
+            "error": None,
+        }
+
     _register_tool(
         server=server,
         name="code_search",
@@ -186,4 +278,10 @@ def register_retrieval_tools(
         name="code_snippet",
         description="Fetch a repository-relative snippet by inclusive line range",
         handler=code_snippet,
+    )
+    _register_tool(
+        server=server,
+        name="code_search_lexical",
+        description="Lexical/regex code search with Zoekt query syntax",
+        handler=code_search_lexical,
     )
