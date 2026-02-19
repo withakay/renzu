@@ -20,6 +20,7 @@ __all__ = [
     "OpenAIEmbedder",
     "QdrantClient",
     "TreeSitterChunker",
+    "create_embedder",
     "get_embedder",
     "get_qdrant_client",
 ]

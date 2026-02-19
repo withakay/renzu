@@ -133,9 +133,11 @@ ______________________________________________________________________
 
 ### Checkpoint: Review Implementation
 
-- **Type**: checkpoint (requires human approval)
-- **Dependencies**: All Wave 1 tasks
-- **Action**: Review the implementation before proceeding
-- **Done When**: User confirms implementation is correct
+- **Type**: checkpoint
+- **Dependencies**: None
+- **Action**:
+  - Run `make check` and `make test` in the change worktree.
+  - Review the implementation for correctness, typing (basedpyright), and lint/format compliance.
+- **Done When**: `make check` and `make test` pass and tasks are all complete.
 - **Updated At**: 2026-02-18
 - **Status**: [x] complete

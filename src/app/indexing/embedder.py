@@ -11,21 +11,32 @@ import hashlib
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Any, Protocol, cast, runtime_checkable
+from typing import TYPE_CHECKING, Any, Protocol, cast
 
 import httpx
 
-from app.config import get_settings
+from app.config import Settings, get_settings
+
+if TYPE_CHECKING:
+    from collections.abc import Awaitable, Callable
 
 
-@runtime_checkable
-class EmbeddingProvider(Protocol):
-    """Protocol for embedding providers."""
+class RateLimiter(Protocol):
+    async def wait(self) -> None: ...
 
+
+class EmbeddingProvider(abc.ABC):
+    """Abstract base class for embedding providers."""
+
+    @property
+    def namespace(self) -> str:
+        """Namespace used for cache key derivation."""
+
+        return self.__class__.__name__
+
+    @abc.abstractmethod
     async def embed(self, texts: list[str]) -> list[list[float]]:
         """Return embeddings for each input text, in order."""
-
-        ...
 
 
 def _content_hash(text: str) -> str:
@@ -62,6 +73,9 @@ class OpenAIEmbedder:
     batch_size: int | None = None
     min_interval_seconds: float | None = None
     timeout_seconds: float = 30.0
+    max_batch_size: int = 128
+    requests_per_second: float | None = None
+    rate_limiter: RateLimiter | None = None
     client: httpx.AsyncClient | None = None
 
     _lock: asyncio.Lock = field(default_factory=asyncio.Lock, init=False, repr=False)
@@ -95,7 +109,7 @@ class OpenAIEmbedder:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
         }
-        payload = {
+        payload: dict[str, Any] = {
             "model": model,
             "input": texts,
         }
@@ -428,7 +442,7 @@ class OllamaEmbedder:
         return vectors
 
 
-class CacheEmbedder:
+class CacheEmbedder(EmbeddingProvider):
     """Embedding provider wrapper with in-memory content-hash caching."""
 
     def __init__(
@@ -440,11 +454,15 @@ class CacheEmbedder:
         self._provider = provider
         self._cache: dict[str, list[float]] = cache or {}
 
+    @property
+    def namespace(self) -> str:
+        return self._provider.namespace
+
     async def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
 
-        hashes = [_content_hash(text) for text in texts]
+        hashes = [f"{self._provider.namespace}:{_content_hash(text)}" for text in texts]
         missing_texts: list[str] = []
         missing_hashes: list[str] = []
 
@@ -462,6 +480,40 @@ class CacheEmbedder:
                 self._cache[digest] = list(vector)
 
         return [self._cache[digest] for digest in hashes]
+
+
+def create_embedder(
+    *,
+    settings: Settings | None = None,
+    client: httpx.AsyncClient | None = None,
+    cache: dict[str, list[float]] | None = None,
+) -> EmbeddingProvider:
+    """Create the configured embedding provider instance."""
+
+    resolved = settings or get_settings()
+    provider = (getattr(resolved, "embedding_provider", None) or "openai").lower()
+
+    vector_size = resolved.embedding_vector_size or resolved.qdrant_vector_size
+    if provider == "openai":
+        embedder: EmbeddingProvider = OpenAIEmbedder(
+            model=resolved.openai_embedding_model,
+            api_key=resolved.openai_api_key,
+            base_url=resolved.openai_base_url,
+            vector_size=vector_size,
+            send_dimensions=resolved.embedding_vector_size is not None,
+            timeout_seconds=resolved.openai_timeout_seconds,
+            max_batch_size=resolved.embedding_max_batch_size,
+            requests_per_second=resolved.embedding_requests_per_second,
+            client=client,
+        )
+    else:
+        raise ValueError(f"Unknown embedding provider: {provider}")
+
+    cache_enabled = bool(getattr(resolved, "embedding_cache_enabled", True))
+    if cache_enabled:
+        embedder = CacheEmbedder(embedder, cache=cache)
+
+    return embedder
 
 
 @lru_cache
