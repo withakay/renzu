@@ -23,9 +23,9 @@ ______________________________________________________________________
 
 - **Depends On**: None
 
-### Task 1.1: [Task Name]
+### Task 1.1: Add Glass URL configuration
 
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/config/__init__.py`, `tests/unit/test_main.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -38,7 +38,7 @@ ______________________________________________________________________
 
 
 ### Task 1.2: Create GlassClient class
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`, `src/app/glass/__init__.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -48,7 +48,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 1.3: Implement connection to Glass server
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -58,7 +58,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 1.4: Add list_symbols API call
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`, `tests/unit/test_glass_client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -68,7 +68,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 1.5: Add describe_symbol API call
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`, `tests/unit/test_glass_client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -78,7 +78,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 1.6: Add find_references API call
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`, `tests/unit/test_glass_client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -93,7 +93,7 @@ ______________________________________________________________________
 - **Depends On**: None
 
 ### Task 2.1: Handle Glass unavailability gracefully
-- **Files**: `path/to/file.rs`
+- **Files**: `src/app/glass/client.py`, `tests/unit/test_glass_client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -103,7 +103,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 2.2: Write unit tests with mocked Glass
-- **Files**: `path/to/file.rs`
+- **Files**: `tests/unit/test_glass_client.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]
@@ -113,7 +113,7 @@ ______________________________________________________________________
 - **Status**: [x] complete
 
 ### Task 2.3: Add integration tests against real Glass
-- **Files**: `path/to/file.rs`
+- **Files**: `tests/integration/test_glass_client_integration.py`
 - **Dependencies**: None
 - **Action**:
   [Describe what needs to be done]

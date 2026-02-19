@@ -60,6 +60,7 @@ class TestConfig:
 
         settings = Settings()
         assert settings.qdrant_url == "http://localhost:6333"
+        assert settings.glass_url is None
         assert settings.http_port == 8000
         assert settings.mcp_port == 9000
         assert settings.log_level == "INFO"
@@ -70,11 +71,13 @@ class TestConfig:
         from app.config import Settings
 
         monkeypatch.setenv("QDRANT_URL", "http://qdrant:6333")
+        monkeypatch.setenv("GLASS_URL", "http://glass:12346")
         monkeypatch.setenv("HTTP_PORT", "9000")
         monkeypatch.setenv("LOG_LEVEL", "DEBUG")
 
         settings = Settings()
         assert settings.qdrant_url == "http://qdrant:6333"
+        assert settings.glass_url == "http://glass:12346"
         assert settings.http_port == 9000
         assert settings.log_level == "DEBUG"
 
