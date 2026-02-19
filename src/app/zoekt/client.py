@@ -5,11 +5,14 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import httpx
 
 from app.config import get_settings
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,7 @@ class ZoektClient:
 
     _SEARCH_PATH = "/api/search"
     _HEALTHZ_PATH = "/healthz"
+    _INDEX_PATH = "/api/index"
 
     def __init__(
         self,
@@ -126,6 +130,24 @@ class ZoektClient:
             if parsed_match is not None:
                 matches.append(parsed_match)
         return matches
+
+    async def index_repo(
+        self,
+        *,
+        repo_id: str,
+        root: Path,
+        changed_files: list[str],
+        incremental: bool,
+    ) -> None:
+        payload = {
+            "repo_id": repo_id,
+            "root": str(root),
+            "changed_files": changed_files,
+            "incremental": incremental,
+        }
+        client = await self._get_client()
+        response = await client.post(self._INDEX_PATH, json=payload)
+        response.raise_for_status()
 
 
 def _parse_file_match(payload: object) -> ZoektFileMatch | None:

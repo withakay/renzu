@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Optional. When unset, Zoekt lexical search integration is disabled.
     zoekt_url: str | None = None
     zoekt_timeout_seconds: float = 5.0
+    zoekt_enabled: bool = True
     http_port: int = 8000
     mcp_port: int = 9000
     log_level: str = "INFO"

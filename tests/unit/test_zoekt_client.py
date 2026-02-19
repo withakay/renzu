@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import httpx
 import pytest
@@ -102,6 +103,35 @@ class TestZoektClient:
 
         with pytest.raises(ValueError, match="num must be >= 1"):
             await client.search("ping", num=0)
+
+    async def test_index_repo_posts_incremental_payload(self) -> None:
+        seen: dict[str, object] = {}
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            seen["path"] = request.url.path
+            seen["json"] = json.loads(request.content.decode("utf-8"))
+            return httpx.Response(200, json={"ok": True})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(transport=transport, base_url="http://zoekt") as http_client:
+            client = ZoektClient(
+                config=ZoektClientConfig(base_url="http://zoekt"),
+                client=http_client,
+            )
+            await client.index_repo(
+                repo_id="repo-1",
+                root=Path("/tmp/repo"),
+                changed_files=["src/a.py", "src/b.py"],
+                incremental=True,
+            )
+
+        assert seen["path"] == "/api/index"
+        assert seen["json"] == {
+            "repo_id": "repo-1",
+            "root": "/tmp/repo",
+            "changed_files": ["src/a.py", "src/b.py"],
+            "incremental": True,
+        }
 
 
 @pytest.mark.unit
