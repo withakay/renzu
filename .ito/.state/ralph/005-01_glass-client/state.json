@@ -1,6 +1,6 @@
 {
   "changeId": "005-01_glass-client",
-  "iteration": 4,
+  "iteration": 5,
   "history": [
     {
       "timestamp": 1771489046038,
@@ -23,6 +23,12 @@
     {
       "timestamp": 1771489469761,
       "duration": 63747,
+      "completionPromiseFound": true,
+      "fileChangesCount": 1
+    },
+    {
+      "timestamp": 1771489534482,
+      "duration": 64718,
       "completionPromiseFound": true,
       "fileChangesCount": 1
     }
