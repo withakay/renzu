@@ -11,6 +11,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from app.indexing.embedder import EmbeddingProvider
 from app.indexing.pipeline import IndexingPipeline
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ class MemoryQdrant:
 
 
 @dataclass(slots=True)
-class FlakyEmbedder:
+class FlakyEmbedder(EmbeddingProvider):
     fail_first: bool = True
     calls: int = 0
 

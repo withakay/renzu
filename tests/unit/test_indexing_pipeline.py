@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from app.indexing.embedder import EmbeddingProvider
 from app.indexing.pipeline import IndexingPipeline
 
 if TYPE_CHECKING:
@@ -33,7 +34,7 @@ class StubQdrant:
 
 
 @dataclass(slots=True)
-class FakeEmbedder:
+class FakeEmbedder(EmbeddingProvider):
     calls: int = 0
 
     async def embed(self, texts: list[str]) -> list[list[float]]:

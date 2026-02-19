@@ -6,19 +6,17 @@ default OpenAI-backed implementation and an in-memory content-hash cache.
 
 from __future__ import annotations
 
+import abc
 import asyncio
 import hashlib
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import Any, Protocol, cast
 
 import httpx
 
 from app.config import Settings, get_settings
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
 
 
 class RateLimiter(Protocol):
@@ -60,7 +58,7 @@ def _coerce_vector(raw: Any, *, expected_size: int | None) -> list[float]:
 
 
 @dataclass(slots=True)
-class OpenAIEmbedder:
+class OpenAIEmbedder(EmbeddingProvider):
     """OpenAI embeddings API implementation.
 
     Uses the `POST /v1/embeddings` endpoint.
@@ -70,6 +68,7 @@ class OpenAIEmbedder:
     api_key: str | None = None
     base_url: str | None = None
     vector_size: int | None = None
+    send_dimensions: bool = False
     batch_size: int | None = None
     min_interval_seconds: float | None = None
     timeout_seconds: float = 30.0
@@ -113,8 +112,12 @@ class OpenAIEmbedder:
             "model": model,
             "input": texts,
         }
+        if self.send_dimensions:
+            payload["dimensions"] = expected_size
 
         async with self._lock:
+            if self.rate_limiter is not None:
+                await self.rate_limiter.wait()
             await self._sleep_if_needed(min_interval_seconds=min_interval_seconds)
             if self.client is None:
                 async with httpx.AsyncClient(
@@ -172,7 +175,7 @@ class OpenAIEmbedder:
             self.vector_size or settings.embedding_vector_size or settings.qdrant_vector_size
         )
 
-        batch_size = self.batch_size or settings.embedding_batch_size
+        batch_size = self.batch_size or self.max_batch_size or settings.embedding_batch_size
         if batch_size <= 0:
             raise ValueError("embedding_batch_size must be > 0")
 
@@ -208,7 +211,7 @@ class OpenAIEmbedder:
 
 
 @dataclass(slots=True)
-class OllamaEmbedder:
+class OllamaEmbedder(EmbeddingProvider):
     """Ollama embeddings API implementation.
 
     Uses the local Ollama HTTP API (`POST /api/embed`).

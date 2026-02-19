@@ -19,12 +19,6 @@ class Settings(BaseSettings):
 
     qdrant_url: str = "http://localhost:6333"
 
-    # Embedding configuration.
-    embedding_provider: str = "openai"
-    embedding_cache_enabled: bool = True
-    embedding_max_batch_size: int = 128
-    embedding_requests_per_second: float | None = None
-
     # Optional OpenAI embedding configuration.
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
@@ -35,6 +29,8 @@ class Settings(BaseSettings):
     # Embedding provider configuration.
     embedding_provider: str = "openai"
     embedding_cache_enabled: bool = True
+    embedding_max_batch_size: int = 128
+    embedding_requests_per_second: float | None = None
     # Ollama embedding configuration.
     ollama_url: str = "http://localhost:11434"
     ollama_embedding_model: str = "nomic-embed-text"
