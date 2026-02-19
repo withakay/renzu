@@ -58,6 +58,12 @@ Run with development override:
 docker compose -f docker-compose.yml -f docker/compose.dev.yml up -d
 ```
 
+Run with optional static web client (served on `http://localhost:8080`):
+
+```bash
+docker compose --profile web up -d --build
+```
+
 Run with production override:
 
 ```bash
