@@ -1,0 +1,13 @@
+{
+  "changeId": "004-01_semantic-search",
+  "iteration": 1,
+  "history": [
+    {
+      "timestamp": 1771489376485,
+      "duration": 835238,
+      "completionPromiseFound": true,
+      "fileChangesCount": 9
+    }
+  ],
+  "contextFile": ".ito/.state/ralph/004-01_semantic-search/context.md"
+}

@@ -28,6 +28,15 @@ from app.glass.service import (
 from app.indexing.chunker import TreeSitterChunker
 from app.indexing.qdrant import ChunkPayload, ChunkPoint, QdrantClient, get_qdrant_client
 from app.indexing.walker import FileWalker
+from app.retrieval.snippet import (
+    SnippetError,
+    get_snippet_service,
+    register_repo_root,
+    resolve_repo_root,
+)
+from app.retrieval.snippet import (
+    clear_repo_roots as _clear_snippet_repo_roots,
+)
 
 
 class ErrorResponse(BaseModel):
@@ -151,16 +160,13 @@ class GlassPassthroughResponse(BaseModel):
     error: str | None = None
 
 
-_repo_roots: dict[str, Path] = {}
-
-
 def clear_repo_roots() -> None:
     """Clear in-memory repo root mappings.
 
     Intended for tests.
     """
 
-    _repo_roots.clear()
+    _clear_snippet_repo_roots()
 
 
 def _pseudo_embedding(text: str, *, dim: int) -> list[float]:
@@ -176,26 +182,12 @@ def _pseudo_embedding(text: str, *, dim: int) -> list[float]:
 
 
 def _resolve_repo_root(repo_id: str) -> Path:
-    root = _repo_roots.get(repo_id)
-    if root is None:
-        raise ApiError(
-            status_code=404,
-            error="unknown_repo",
-            detail=f"Unknown repo_id: {repo_id}. Call POST /v1/index first.",
-        )
-    return root
-
-
-def _safe_join(root: Path, relative_path: str) -> Path:
-    candidate = (root / relative_path).resolve()
-    root_resolved = root.resolve()
     try:
-        candidate.relative_to(root_resolved)
-    except ValueError as exc:
-        raise ApiError(
-            status_code=400, error="invalid_path", detail="Path escapes repo root"
-        ) from exc
-    return candidate
+        return resolve_repo_root(repo_id)
+    except SnippetError as exc:
+        if exc.error == "unknown_repo":
+            raise ApiError(status_code=404, error=exc.error, detail=exc.detail) from exc
+        raise ApiError(status_code=400, error=exc.error, detail=exc.detail) from exc
 
 
 async def _index_repo(
@@ -288,7 +280,7 @@ async def post_index(request: IndexRequest) -> IndexResponse:
     except Exception as exc:
         raise ApiError(status_code=500, error="index_failed", detail=str(exc)) from exc
 
-    _repo_roots[request.repo_id] = root.resolve()
+    register_repo_root(request.repo_id, root)
     return IndexResponse(
         ok=True,
         job_id=job_id,
@@ -358,28 +350,21 @@ async def post_search(request: SearchRequest) -> SearchResponse:
     },
 )
 async def post_snippet(request: SnippetRequest) -> SnippetResponse:
-    if request.end_line < request.start_line:
-        raise ApiError(
-            status_code=400, error="invalid_range", detail="end_line must be >= start_line"
-        )
-
-    root = _resolve_repo_root(request.repo_id)
-    file_path = _safe_join(root, request.path)
-    if not file_path.exists() or not file_path.is_file():
-        raise ApiError(status_code=404, error="not_found", detail="File not found")
-
+    service = get_snippet_service()
     try:
-        lines = file_path.read_text(encoding="utf-8").splitlines(keepends=True)
-    except UnicodeDecodeError as exc:
-        raise ApiError(
-            status_code=400, error="binary_file", detail="File is not UTF-8 text"
-        ) from exc
-    except OSError as exc:
-        raise ApiError(status_code=500, error="read_failed", detail=str(exc)) from exc
+        content = service.fetch(
+            request.repo_id,
+            request.path,
+            start_line=request.start_line,
+            end_line=request.end_line,
+        )
+    except SnippetError as exc:
+        if exc.error in {"unknown_repo", "not_found"}:
+            raise ApiError(status_code=404, error=exc.error, detail=exc.detail) from exc
+        if exc.error == "read_failed":
+            raise ApiError(status_code=500, error=exc.error, detail=exc.detail) from exc
+        raise ApiError(status_code=400, error=exc.error, detail=exc.detail) from exc
 
-    start_index = max(request.start_line - 1, 0)
-    end_index = min(request.end_line, len(lines))
-    content = "".join(lines[start_index:end_index])
     return SnippetResponse(
         ok=True,
         repo_id=request.repo_id,
