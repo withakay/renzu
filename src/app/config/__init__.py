@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     )
 
     qdrant_url: str = "http://localhost:6333"
+    # Optional Glass server URL for symbol navigation.
+    # When unset, Glass features should degrade gracefully.
+    glass_url: str | None = None
     http_port: int = 8000
     mcp_port: int = 9000
     log_level: str = "INFO"
