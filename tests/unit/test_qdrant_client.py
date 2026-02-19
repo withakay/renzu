@@ -78,6 +78,7 @@ class TestQdrantClient:
             repo_id="repo-1",
             path_prefix="src/",
             language="python",
+            chunk_type="ts:function",
             limit=3,
         )
 
@@ -85,7 +86,7 @@ class TestQdrantClient:
         search_call = fake_client.search.await_args.kwargs
         assert search_call["limit"] == 3
         assert search_call["query_filter"] is not None
-        assert len(search_call["query_filter"].must) == 3
+        assert len(search_call["query_filter"].must) == 4
 
     async def test_health_check_returns_true_when_qdrant_reachable(self) -> None:
         fake_client = AsyncMock()

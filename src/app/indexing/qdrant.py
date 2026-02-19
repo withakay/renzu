@@ -144,6 +144,7 @@ class QdrantClient:
         repo_id: str | None = None,
         path_prefix: str | None = None,
         language: str | None = None,
+        chunk_type: str | None = None,
     ) -> list[models.ScoredPoint]:
         """Search points with optional payload filters."""
 
@@ -160,6 +161,13 @@ class QdrantClient:
         if path_prefix:
             filter_conditions.append(
                 models.FieldCondition(key="path", match=models.MatchText(text=path_prefix))
+            )
+        if chunk_type:
+            filter_conditions.append(
+                models.FieldCondition(
+                    key="chunk_type",
+                    match=models.MatchValue(value=chunk_type),
+                )
             )
 
         query_filter = models.Filter(must=filter_conditions) if filter_conditions else None
