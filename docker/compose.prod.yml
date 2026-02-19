@@ -1,0 +1,17 @@
+services:
+  code-context:
+    restart: always
+    environment:
+      LOG_LEVEL: INFO
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+    volumes:
+      - ${WORKSPACE_PATH:-..}:/workspace:ro
+
+  qdrant:
+    restart: always
+
+  glean-server:
+    restart: always
+
+  glass-server:
+    restart: always

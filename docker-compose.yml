@@ -1,0 +1,118 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "echo > /dev/tcp/localhost/6333"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    networks:
+      - infra
+
+  glean-server:
+    image: ${GLEAN_IMAGE:-glean-base}
+    build:
+      context: ${GLEAN_DOCKER_PATH:-./.local/glean-docker}/base
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    entrypoint: ["glean-server"]
+    command:
+      - --db-root
+      - /data/glean/db
+      - --port
+      - "12345"
+    ports:
+      - "12345:12345"
+    volumes:
+      - glean_db:/data/glean/db
+    healthcheck:
+      test: ["CMD", "bash", "-lc", "echo > /dev/tcp/localhost/12345"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    networks:
+      - infra
+
+  glass-server:
+    image: python:3.12-slim
+    restart: unless-stopped
+    depends_on:
+      glean-server:
+        condition: service_healthy
+    command: ["python", "/app/server.py", "--port", "12346"]
+    ports:
+      - "12346:12346"
+    volumes:
+      - ./docker/glass-stub:/app:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',12346),1); s.close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    networks:
+      - infra
+
+  code-context:
+    build:
+      context: .
+      dockerfile: docker/code-context.Dockerfile
+    restart: unless-stopped
+    depends_on:
+      qdrant:
+        condition: service_healthy
+      glass-server:
+        condition: service_healthy
+    environment:
+      QDRANT_URL: http://qdrant:6333
+      GLASS_URL: http://glass-server:12346
+      HTTP_PORT: "8000"
+      MCP_PORT: "9000"
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      ZOEKT_URL: ${ZOEKT_URL:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_EMBEDDING_MODEL: ${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      EMBEDDING_PROVIDER: ${EMBEDDING_PROVIDER:-openai}
+      OLLAMA_URL: ${OLLAMA_URL:-http://ollama:11434}
+    ports:
+      - "8000:8000"
+      - "9000:9000"
+    volumes:
+      - ${WORKSPACE_PATH:-.}:/workspace:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',8000),1); s.close()"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+    networks:
+      - infra
+
+  ollama:
+    profiles: ["ollama"]
+    image: ollama/ollama:latest
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "ps"]
+      interval: 10s
+      timeout: 3s
+      retries: 30
+    networks:
+      - infra
+
+volumes:
+  qdrant_storage:
+  glean_db:
+  ollama_data:
+
+networks:
+  infra:
+    name: code-context-infra

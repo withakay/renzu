@@ -42,3 +42,29 @@ Service endpoints:
 - Glean server: `localhost:12345`
 - Glass server: `localhost:12346`
 - Ollama (profile `ollama`): `http://localhost:11434`
+
+## Full Stack Compose
+
+Run the full stack (infra + code-context service):
+
+```bash
+cp .env.example .env
+docker compose up -d
+```
+
+Run with development override:
+
+```bash
+docker compose -f docker-compose.yml -f docker/compose.dev.yml up -d
+```
+
+Run with production override:
+
+```bash
+docker compose -f docker-compose.yml -f docker/compose.prod.yml up -d
+```
+
+Additional service endpoints for full stack:
+
+- code-context HTTP: `http://localhost:8000`
+- code-context MCP port: `localhost:9000`
