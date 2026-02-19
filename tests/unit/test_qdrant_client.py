@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -54,6 +55,32 @@ class TestQdrantClient:
         upsert_call = fake_client.upsert.await_args.kwargs
         assert upsert_call["collection_name"] == "code_chunks"
         assert upsert_call["points"][0].payload["repo_id"] == "repo-1"
+        normalized_id = upsert_call["points"][0].id
+        assert isinstance(normalized_id, str)
+        assert str(uuid.UUID(normalized_id)) == normalized_id
+
+    async def test_upsert_points_preserves_uuid_ids(self) -> None:
+        fake_client = AsyncMock()
+        client = QdrantClient(client=fake_client)
+        payload = ChunkPayload(
+            repo_id="ignored",
+            path="src/main.py",
+            language="python",
+            chunk_type="function",
+            start_line=1,
+            end_line=5,
+            text="def f(): pass",
+            content_hash="abc123",
+        )
+        uuid_id = "123e4567-e89b-12d3-a456-426614174000"
+
+        await client.upsert_points(
+            repo_id="repo-1",
+            points=[ChunkPoint(id=uuid_id, vector=[0.1, 0.2, 0.3], payload=payload)],
+        )
+
+        upsert_call = fake_client.upsert.await_args.kwargs
+        assert upsert_call["points"][0].id == uuid_id
 
     async def test_delete_by_repo_uses_repo_filter(self) -> None:
         fake_client = AsyncMock()
@@ -87,6 +114,24 @@ class TestQdrantClient:
         assert search_call["limit"] == 3
         assert search_call["query_filter"] is not None
         assert len(search_call["query_filter"].must) == 4
+
+    async def test_search_falls_back_to_query_points_when_search_missing(self) -> None:
+        class QueryPointsOnly:
+            def __init__(self) -> None:
+                self.query_points = AsyncMock(return_value=SimpleNamespace(points=[]))
+
+        fake_client = QueryPointsOnly()
+        client = QdrantClient(client=fake_client)
+
+        result = await client.search(query_vector=[0.1, 0.2], limit=2)
+
+        assert result == []
+        fake_client.query_points.assert_awaited_once()
+        await_args = fake_client.query_points.await_args
+        assert await_args is not None
+        query_call = await_args.kwargs
+        assert query_call["query"] == [0.1, 0.2]
+        assert query_call["limit"] == 2
 
     async def test_health_check_returns_true_when_qdrant_reachable(self) -> None:
         fake_client = AsyncMock()

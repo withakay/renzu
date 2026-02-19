@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import uuid
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any, TypeVar, cast
 
 from pydantic import BaseModel, ConfigDict
 from qdrant_client import AsyncQdrantClient, models
@@ -103,7 +104,7 @@ class QdrantClient:
 
         point_structs = [
             models.PointStruct(
-                id=point.id,
+                id=self._normalize_point_id(point.id),
                 vector=point.vector,
                 payload=point.payload.model_copy(update={"repo_id": repo_id}).model_dump(),
             )
@@ -116,6 +117,22 @@ class QdrantClient:
                 points=point_structs,
             )
         )
+
+    def _normalize_point_id(self, point_id: str | int) -> str | int:
+        """Return a Qdrant-compatible point ID.
+
+        Qdrant accepts integer IDs or UUID strings. For non-UUID string IDs,
+        derive a deterministic UUIDv5 so repeated indexing remains idempotent.
+        """
+
+        if isinstance(point_id, int):
+            return point_id
+
+        try:
+            parsed = uuid.UUID(point_id)
+            return str(parsed)
+        except ValueError:
+            return str(uuid.uuid5(uuid.NAMESPACE_URL, point_id))
 
     async def delete_by_repo(self, repo_id: str) -> None:
         """Delete all points by repo identifier."""
@@ -171,14 +188,42 @@ class QdrantClient:
             )
 
         query_filter = models.Filter(must=filter_conditions) if filter_conditions else None
-        return await self._with_retry(
-            lambda: self._client.search(
-                collection_name=self.collection_name,
-                query_vector=query_vector,
-                query_filter=query_filter,
-                limit=limit,
+
+        search_method = getattr(self._client, "search", None)
+        if callable(search_method):
+            search_callable = cast(
+                "Callable[..., Awaitable[list[models.ScoredPoint]]]", search_method
             )
-        )
+            return await self._with_retry(
+                lambda: search_callable(
+                    collection_name=self.collection_name,
+                    query_vector=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                )
+            )
+
+        query_points_method = getattr(self._client, "query_points", None)
+        if callable(query_points_method):
+            query_points_callable = cast("Callable[..., Awaitable[Any]]", query_points_method)
+            response = await self._with_retry(
+                lambda: query_points_callable(
+                    collection_name=self.collection_name,
+                    query=query_vector,
+                    query_filter=query_filter,
+                    limit=limit,
+                    with_payload=True,
+                    with_vectors=False,
+                )
+            )
+            points = getattr(response, "points", None)
+            if isinstance(points, list):
+                return cast("list[models.ScoredPoint]", points)
+            if isinstance(response, list):
+                return cast("list[models.ScoredPoint]", response)
+            return []
+
+        raise RuntimeError("Qdrant client does not expose search or query_points")
 
     async def health_check(self) -> bool:
         """Return True when Qdrant is reachable."""

@@ -11,10 +11,11 @@ WORKDIR /app
 
 COPY pyproject.toml /app/
 COPY uv.lock /app/
-RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev
+COPY README.md /app/README.md
+RUN pip install --no-cache-dir uv && uv sync --frozen --no-dev --no-install-project
 
 COPY src /app/src
-COPY README.md /app/README.md
+RUN uv sync --frozen --no-dev
 
 EXPOSE 8000
 EXPOSE 9000
