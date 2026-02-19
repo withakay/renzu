@@ -9,6 +9,7 @@ from inspect import Parameter, signature
 from typing import Any, cast
 
 from app import __version__
+from app.mcp.tools.glass import register_glass_tools
 from app.mcp.tools.retrieval import register_retrieval_tools
 
 type FastMCPFactory = Callable[..., Any]
@@ -80,6 +81,7 @@ def create_mcp_server(
     if "capabilities" not in accepted_kwargs:
         server.capabilities = resolved_metadata.resolved_capabilities()
     register_retrieval_tools(server=server)
+    register_glass_tools(server=server)
     return server
 
 

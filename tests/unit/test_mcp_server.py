@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from app.glass.service import GlassResponse
 from app.retrieval.search import Citation, SearchResult
 from app.retrieval.snippet import Snippet
 
@@ -73,6 +74,68 @@ class _FakeSnippetService:
         )
 
 
+class _FakeGlassService:
+    async def symbols_in_file(self, request: object) -> GlassResponse:
+        _ = request
+        return GlassResponse(
+            ok=True,
+            available=True,
+            formatted="Symbols in repo-1:src/ping.py",
+            data=[
+                {
+                    "symbol_id": "sym-1",
+                    "name": "ping",
+                    "kind": "function",
+                    "location": {"repo_id": "repo-1", "path": "src/ping.py", "line": 10},
+                }
+            ],
+        )
+
+    async def symbol_definition(self, request: object) -> GlassResponse:
+        _ = request
+        return GlassResponse(
+            ok=True,
+            available=True,
+            formatted="Definition for sym-1",
+            data={
+                "symbol_id": "sym-1",
+                "name": "ping",
+                "kind": "function",
+                "location": {"repo_id": "repo-1", "path": "src/ping.py", "line": 10},
+            },
+        )
+
+    async def symbol_references(self, request: object) -> GlassResponse:
+        _ = request
+        return GlassResponse(
+            ok=True,
+            available=True,
+            formatted="References for sym-1",
+            data=[
+                {"repo_id": "repo-1", "path": "src/ping.py", "line": 15},
+                {"repo_id": "repo-1", "path": "src/cli.py", "line": 20},
+            ],
+        )
+
+
+class _FakeUnavailableGlassService:
+    async def symbols_in_file(self, request: object) -> GlassResponse:
+        _ = request
+        return GlassResponse(
+            ok=False,
+            available=False,
+            error="Glass is disabled (GLASS_URL not configured)",
+            formatted="Glass is disabled (GLASS_URL not configured)",
+            data=None,
+        )
+
+    async def symbol_definition(self, request: object) -> GlassResponse:
+        return await self.symbols_in_file(request)
+
+    async def symbol_references(self, request: object) -> GlassResponse:
+        return await self.symbols_in_file(request)
+
+
 @pytest.mark.unit
 def test_create_server_uses_default_metadata() -> None:
     from app import __version__
@@ -88,6 +151,9 @@ def test_create_server_uses_default_metadata() -> None:
     assert server.init_kwargs["capabilities"] == {"tools": {}}
     assert "code_search" in server.tools
     assert "code_snippet" in server.tools
+    assert "symbols_in_file" in server.tools
+    assert "symbol_definition" in server.tools
+    assert "symbol_references" in server.tools
 
 
 @pytest.mark.unit
@@ -193,6 +259,90 @@ def test_code_snippet_validates_parameters() -> None:
 
     with pytest.raises(ValueError, match="end_line must be >= start_line"):
         server.tools["code_snippet"](repo_id="r", path="x.py", start_line=3, end_line=2)
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_symbols_in_file_tool_returns_symbols() -> None:
+    from app.mcp.server import create_mcp_server
+    from app.mcp.tools.glass import register_glass_tools
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+    register_glass_tools(server=server, glass_service=_FakeGlassService())
+
+    payload = await server.tools["symbols_in_file"](repo_id="repo-1", path="src/ping.py")
+
+    assert payload["ok"] is True
+    assert payload["available"] is True
+    assert payload["symbols"][0]["symbol_id"] == "sym-1"
+    assert payload["symbols"][0]["location"]["path"] == "src/ping.py"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_symbol_definition_tool_returns_definition() -> None:
+    from app.mcp.server import create_mcp_server
+    from app.mcp.tools.glass import register_glass_tools
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+    register_glass_tools(server=server, glass_service=_FakeGlassService())
+
+    payload = await server.tools["symbol_definition"](symbol_id="sym-1")
+
+    assert payload["ok"] is True
+    assert payload["available"] is True
+    assert payload["definition"]["symbol_id"] == "sym-1"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_symbol_references_tool_returns_references() -> None:
+    from app.mcp.server import create_mcp_server
+    from app.mcp.tools.glass import register_glass_tools
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+    register_glass_tools(server=server, glass_service=_FakeGlassService())
+
+    payload = await server.tools["symbol_references"](symbol_id="sym-1")
+
+    assert payload["ok"] is True
+    assert payload["available"] is True
+    assert len(payload["references"]) == 2
+    assert payload["references"][0]["path"] == "src/ping.py"
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_glass_tools_unavailability_returns_informative_error() -> None:
+    from app.mcp.server import create_mcp_server
+    from app.mcp.tools.glass import register_glass_tools
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+    register_glass_tools(server=server, glass_service=_FakeUnavailableGlassService())
+
+    payload = await server.tools["symbols_in_file"](repo_id="repo-1", path="src/ping.py")
+
+    assert payload["ok"] is False
+    assert payload["available"] is False
+    assert payload["error"] is not None
+    assert "disabled" in payload["error"]
+
+
+@pytest.mark.unit
+@pytest.mark.asyncio
+async def test_glass_tools_validate_required_parameters() -> None:
+    from app.mcp.server import create_mcp_server
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+
+    with pytest.raises(ValueError, match="repo_id must not be empty"):
+        await server.tools["symbols_in_file"](repo_id=" ", path="src/ping.py")
+
+    with pytest.raises(ValueError, match="path must not be empty"):
+        await server.tools["symbols_in_file"](repo_id="repo-1", path="")
+
+    with pytest.raises(ValueError, match="symbol_id must not be empty"):
+        await server.tools["symbol_definition"](symbol_id=" ")
 
 
 @pytest.mark.unit
