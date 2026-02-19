@@ -94,6 +94,7 @@ asyncio_mode = "auto"
 markers = [
     "unit: fast tests without external services",
     "integration: tests requiring Docker (Qdrant, Glean)",
+    "live_api: tests requiring real external APIs (OpenAI)",
 ]
 addopts = "-ra -q --strict-markers"
 

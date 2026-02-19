@@ -18,10 +18,18 @@ class Settings(BaseSettings):
     )
 
     qdrant_url: str = "http://localhost:6333"
+
+    # Embedding configuration.
+    embedding_provider: str = "openai"
+    embedding_cache_enabled: bool = True
+    embedding_max_batch_size: int = 128
+    embedding_requests_per_second: float | None = None
+
     # Optional OpenAI embedding configuration.
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
     openai_embedding_model: str = "text-embedding-3-small"
+    openai_timeout_seconds: float = 30.0
     # When unset, the embedder falls back to qdrant_vector_size.
     embedding_vector_size: int | None = None
     # Optional. When unset, Glass integration is disabled and callers must handle fallbacks.

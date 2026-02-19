@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from typing import Any, cast
 
 import httpx
 import pytest
@@ -12,7 +13,7 @@ from app.indexing.embedder import CacheEmbedder, EmbeddingProvider, OpenAIEmbedd
 
 
 @dataclass
-class FakeProvider:
+class FakeProvider(EmbeddingProvider):
     call_count: int = 0
     last_texts: list[str] | None = None
 
@@ -63,6 +64,7 @@ class TestOpenAIEmbedder:
             payload = json.loads(request.content.decode("utf-8"))
             assert payload["model"] == "text-embedding-3-small"
             assert payload["input"] == ["t1", "t2"]
+            assert "dimensions" not in payload
 
             return httpx.Response(
                 200,
@@ -81,11 +83,102 @@ class TestOpenAIEmbedder:
                 api_key="sk-test",
                 model="text-embedding-3-small",
                 vector_size=3,
+                max_batch_size=128,
             )
             vectors = await embedder.embed(["t1", "t2"])
 
         assert request_count == 1
         assert vectors == [[0.0, 1.0, 2.0], [3.0, 4.0, 5.0]]
+
+    async def test_batches_large_inputs(self) -> None:
+        requests: list[list[str]] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            payload = cast("dict[str, Any]", json.loads(request.content.decode("utf-8")))
+            raw_inputs = payload["input"]
+            assert isinstance(raw_inputs, list)
+            inputs = cast("list[object]", raw_inputs)
+            requests.append([str(value) for value in inputs])
+
+            batch = len(requests)
+            if batch == 1:
+                return httpx.Response(
+                    200,
+                    json={
+                        "data": [
+                            {"index": 0, "embedding": [0.0, 0.0, 0.0]},
+                            {"index": 1, "embedding": [1.0, 1.0, 1.0]},
+                        ]
+                    },
+                )
+            return httpx.Response(
+                200,
+                json={"data": [{"index": 0, "embedding": [2.0, 2.0, 2.0]}]},
+            )
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="https://api.test/v1", transport=transport) as client:
+            embedder: EmbeddingProvider = OpenAIEmbedder(
+                client=client,
+                api_key="sk-test",
+                model="text-embedding-3-small",
+                vector_size=3,
+                max_batch_size=2,
+            )
+            vectors = await embedder.embed(["t1", "t2", "t3"])
+
+        assert requests == [["t1", "t2"], ["t3"]]
+        assert vectors == [
+            [0.0, 0.0, 0.0],
+            [1.0, 1.0, 1.0],
+            [2.0, 2.0, 2.0],
+        ]
+
+    async def test_rate_limiter_waits_once_per_batch(self) -> None:
+        @dataclass
+        class RecordingLimiter:
+            calls: int = 0
+
+            async def wait(self) -> None:
+                self.calls += 1
+
+        limiter = RecordingLimiter()
+
+        def handler(_: httpx.Request) -> httpx.Response:
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.0, 1.0, 2.0]}]})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="https://api.test/v1", transport=transport) as client:
+            embedder: EmbeddingProvider = OpenAIEmbedder(
+                client=client,
+                api_key="sk-test",
+                model="text-embedding-3-small",
+                vector_size=3,
+                max_batch_size=1,
+                rate_limiter=limiter,
+            )
+            _ = await embedder.embed(["t1", "t2"])
+
+        assert limiter.calls == 2
+
+    async def test_sends_dimensions_when_enabled(self) -> None:
+        def handler(request: httpx.Request) -> httpx.Response:
+            payload = json.loads(request.content.decode("utf-8"))
+            assert payload["dimensions"] == 3
+            return httpx.Response(200, json={"data": [{"index": 0, "embedding": [0.0, 1.0, 2.0]}]})
+
+        transport = httpx.MockTransport(handler)
+        async with httpx.AsyncClient(base_url="https://api.test/v1", transport=transport) as client:
+            embedder: EmbeddingProvider = OpenAIEmbedder(
+                client=client,
+                api_key="sk-test",
+                model="text-embedding-3-small",
+                vector_size=3,
+                send_dimensions=True,
+            )
+            vectors = await embedder.embed(["t1"])
+
+        assert vectors == [[0.0, 1.0, 2.0]]
 
     async def test_raises_on_dimension_mismatch(self) -> None:
         def handler(_: httpx.Request) -> httpx.Response:

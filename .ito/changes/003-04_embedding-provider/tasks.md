@@ -23,111 +23,145 @@ ______________________________________________________________________
 
 - **Depends On**: None
 
-### Task 1.1: [Task Name]
+### Task 1.1: Finalize change artifacts (specs/design/tasks)
 
-- **Files**: `path/to/file.rs`
+- **Files**:
+  - `.ito/changes/003-04_embedding-provider/specs/embedding-provider/spec.md`
+  - `.ito/changes/003-04_embedding-provider/design.md`
+  - `.ito/changes/003-04_embedding-provider/tasks.md`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Ensure specs cover provider abstraction, batching, rate limiting, caching, dimension config, and factory.
+  - Add a lightweight design doc describing key decisions and test strategy.
+  - Ensure this tasks file references the actual Python files/commands.
+- **Verify**: `ito validate 003-04_embedding-provider --strict`
+- **Done When**: `ito validate 003-04_embedding-provider --strict` passes.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ______________________________________________________________________
 
 
 ### Task 1.2: Create EmbeddingProvider abstract base class
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `src/app/indexing/embedder.py`
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 1.1
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Implement an async `EmbeddingProvider` ABC with `embed(texts: list[str]) -> list[list[float]]`.
+  - Ensure typing is strict-friendly (basedpyright).
+- **Verify**: `make test`
+- **Done When**: Unit tests pass and `EmbeddingProvider` is used as the core interface.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Implement OpenAI embedding provider
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `src/app/indexing/embedder.py`
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 1.2
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Implement an `OpenAIEmbedder` that calls `POST /v1/embeddings` via `httpx`.
+  - Validate response shape and embedding dimensionality.
+- **Verify**: `make test`
+- **Done When**: Unit tests demonstrate correct request/response parsing and dimension validation.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Add batch embedding support with rate limiting
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `src/app/indexing/embedder.py`
+  - `src/app/config/__init__.py`
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 1.3
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Add provider-side batching for large input lists.
+  - Add an async rate limiter between batch requests.
+  - Make batch/rate settings configurable.
+- **Verify**: `make test`
+- **Done When**: Unit tests verify batching produces multiple requests and ordering is preserved.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Implement content hash-based caching
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `src/app/indexing/embedder.py`
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 1.2
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Ensure `CacheEmbedder` keys by content hash and provider namespace.
+  - Ensure caching avoids duplicate provider calls and supports partial cache hits.
+- **Verify**: `make test`
+- **Done When**: Unit tests confirm caching behavior and no duplicate calls.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.6: Add embedding dimension configuration
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `src/app/config/__init__.py`
+  - `src/app/indexing/embedder.py`
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 1.3
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Ensure embedding vector size is configurable and enforced.
+  - Prefer an explicit embedding vector size when set; otherwise fall back to Qdrant vector size.
+- **Verify**: `make test`
+- **Done When**: Dimension is configurable via settings and validated in provider parsing.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
 ## Wave 2
-- **Depends On**: None
+- **Depends On**: Wave 1
 
 ### Task 2.1: Implement provider factory pattern
-- **Files**: `path/to/file.rs`
+- **Files**:
+  - `src/app/indexing/embedder.py`
+  - `src/app/indexing/__init__.py`
+  - `src/app/config/__init__.py`
 - **Dependencies**: None
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Add a factory that selects the configured embedding provider and applies caching wrapper.
+  - Keep `get_embedder()` as the main entrypoint.
+- **Verify**: `make test`
+- **Done When**: `get_embedder()` returns the configured provider with caching applied as configured.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Write unit tests with mocked API responses
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `tests/unit/test_embedder.py`
+- **Dependencies**: Task 2.1
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Add unit tests using `httpx.MockTransport` to validate request payloads and parsing.
+  - Add tests for batching and cache behavior.
+- **Verify**: `make test`
+- **Done When**: `pytest -m unit` passes.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.3: Add integration tests against real APIs
-- **Files**: `path/to/file.rs`
-- **Dependencies**: None
+- **Files**:
+  - `tests/integration/test_openai_embedder_live.py`
+  - `pyproject.toml`
+- **Dependencies**: Task 2.2
 - **Action**:
-  [Describe what needs to be done]
-- **Verify**: `cargo test --workspace`
-- **Done When**: [Success criteria]
+  - Add a live OpenAI integration test that is skipped unless explicitly enabled.
+  - Add a pytest marker for the live API test.
+- **Verify**: `pytest -m live_api`
+- **Done When**: Live API test runs successfully when enabled and is skipped by default.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
 
-- **Type**: checkpoint (requires human approval)
-- **Dependencies**: All Wave 1 tasks
-- **Action**: Review the implementation before proceeding
-- **Done When**: User confirms implementation is correct
+- **Type**: checkpoint
+- **Dependencies**: None
+- **Action**:
+  - Run `make check` and `make test` in the change worktree.
+  - Review the implementation for correctness, typing (basedpyright), and lint/format compliance.
+- **Done When**: `make check` and `make test` pass and tasks are all complete.
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
