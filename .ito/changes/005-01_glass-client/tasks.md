@@ -31,8 +31,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [-] shelved
 
 ______________________________________________________________________
 
@@ -44,8 +44,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] in-progress
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 1.3: Implement connection to Glass server
 - **Files**: `path/to/file.rs`
@@ -54,8 +54,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 1.4: Add list_symbols API call
 - **Files**: `path/to/file.rs`
@@ -64,8 +64,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 1.5: Add describe_symbol API call
 - **Files**: `path/to/file.rs`
@@ -74,8 +74,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 1.6: Add find_references API call
 - **Files**: `path/to/file.rs`
@@ -84,8 +84,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ---
 
@@ -99,8 +99,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 2.2: Write unit tests with mocked Glass
 - **Files**: `path/to/file.rs`
@@ -109,8 +109,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 
 ### Task 2.3: Add integration tests against real Glass
 - **Files**: `path/to/file.rs`
@@ -119,8 +119,8 @@ ______________________________________________________________________
   [Describe what needs to be done]
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -129,5 +129,5 @@ ______________________________________________________________________
 - **Dependencies**: All Wave 1 tasks
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
-- **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Updated At**: 2026-02-19
+- **Status**: [x] complete

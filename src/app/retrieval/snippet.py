@@ -22,6 +22,18 @@ class SnippetError(Exception):
     detail: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class Snippet:
+    """A fetched snippet span.
+
+    start_line/end_line are 1-based and inclusive.
+    """
+
+    start_line: int
+    end_line: int
+    content: str
+
+
 _repo_roots: dict[str, Path] = {}
 
 
@@ -82,17 +94,34 @@ class SnippetService:
     ) -> None:
         self._resolve_root = repo_root_resolver or resolve_repo_root
 
-    def fetch(self, repo_id: str, path: str, *, start_line: int, end_line: int) -> str:
-        """Fetch file content for the given inclusive line range."""
+    def fetch_snippet(
+        self,
+        repo_id: str,
+        path: str,
+        *,
+        start_line: int,
+        end_line: int,
+        context_lines: int = 0,
+    ) -> Snippet:
+        """Fetch file content for the given inclusive line range.
+
+        When context_lines > 0, the returned content includes that many extra
+        lines of context before start_line and after end_line (clamped to file
+        bounds). The returned start/end reflect the expanded range.
+        """
 
         normalized_path = path.strip()
         if not normalized_path:
             raise SnippetError(error="invalid_path", detail="path must not be empty")
+        if "\x00" in normalized_path:
+            raise SnippetError(error="invalid_path", detail="path contains NUL byte")
 
         if start_line < 1 or end_line < 1:
             raise SnippetError(error="invalid_range", detail="line numbers must be >= 1")
         if end_line < start_line:
             raise SnippetError(error="invalid_range", detail="end_line must be >= start_line")
+        if context_lines < 0:
+            raise SnippetError(error="invalid_context", detail="context_lines must be >= 0")
 
         root = self._resolve_root(repo_id)
         file_path = _safe_join(root, normalized_path)
@@ -106,9 +135,31 @@ class SnippetService:
         except OSError as exc:
             raise SnippetError(error="read_failed", detail=str(exc)) from exc
 
-        start_index = min(max(start_line - 1, 0), len(lines))
-        end_index = min(end_line, len(lines))
-        return "".join(lines[start_index:end_index])
+        expanded_start = max(start_line - context_lines, 1)
+        expanded_end = end_line + context_lines
+
+        start_index = min(max(expanded_start - 1, 0), len(lines))
+        end_index = min(expanded_end, len(lines))
+        content = "".join(lines[start_index:end_index])
+
+        return Snippet(start_line=expanded_start, end_line=expanded_end, content=content)
+
+    def fetch(
+        self,
+        repo_id: str,
+        path: str,
+        *,
+        start_line: int,
+        end_line: int,
+        context_lines: int = 0,
+    ) -> str:
+        return self.fetch_snippet(
+            repo_id,
+            path,
+            start_line=start_line,
+            end_line=end_line,
+            context_lines=context_lines,
+        ).content
 
 
 @lru_cache

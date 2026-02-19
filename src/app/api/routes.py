@@ -137,6 +137,7 @@ class SnippetRequest(BaseModel):
     path: str = Field(min_length=1, description="Repository-relative path")
     start_line: int = Field(ge=1)
     end_line: int = Field(ge=1)
+    context_lines: int = Field(default=0, ge=0)
 
 
 class SnippetResponse(BaseModel):
@@ -352,11 +353,12 @@ async def post_search(request: SearchRequest) -> SearchResponse:
 async def post_snippet(request: SnippetRequest) -> SnippetResponse:
     service = get_snippet_service()
     try:
-        content = service.fetch(
+        snippet = service.fetch_snippet(
             request.repo_id,
             request.path,
             start_line=request.start_line,
             end_line=request.end_line,
+            context_lines=request.context_lines,
         )
     except SnippetError as exc:
         if exc.error in {"unknown_repo", "not_found"}:
@@ -369,9 +371,9 @@ async def post_snippet(request: SnippetRequest) -> SnippetResponse:
         ok=True,
         repo_id=request.repo_id,
         path=request.path,
-        start_line=request.start_line,
-        end_line=request.end_line,
-        content=content,
+        start_line=snippet.start_line,
+        end_line=snippet.end_line,
+        content=snippet.content,
     )
 
 

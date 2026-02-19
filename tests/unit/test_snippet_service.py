@@ -63,3 +63,34 @@ class TestSnippetService:
 
         content = service.fetch("test", "hello.txt", start_line=2, end_line=20)
         assert content == "b\nc\n"
+
+    def test_context_lines_expands_range(self, tmp_path: Path) -> None:
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "hello.txt").write_text("a\nb\nc\nd\n", encoding="utf-8")
+
+        snippet.register_repo_root("test", repo_root)
+        service = snippet.get_snippet_service()
+
+        result = service.fetch_snippet(
+            "test",
+            "hello.txt",
+            start_line=2,
+            end_line=3,
+            context_lines=1,
+        )
+        assert result.start_line == 1
+        assert result.end_line == 4
+        assert result.content == "a\nb\nc\nd\n"
+
+    def test_negative_context_lines_is_rejected(self, tmp_path: Path) -> None:
+        repo_root = tmp_path / "repo"
+        repo_root.mkdir()
+        (repo_root / "hello.txt").write_text("a\n", encoding="utf-8")
+
+        snippet.register_repo_root("test", repo_root)
+        service = snippet.get_snippet_service()
+
+        with pytest.raises(snippet.SnippetError) as excinfo:
+            service.fetch("test", "hello.txt", start_line=1, end_line=1, context_lines=-1)
+        assert excinfo.value.error == "invalid_context"
