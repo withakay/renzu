@@ -32,7 +32,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ______________________________________________________________________
 
@@ -45,7 +45,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.3: Integrate FileWalker + Chunker + EmbeddingProvider + QdrantClient
 - **Files**: `path/to/file.rs`
@@ -55,7 +55,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.4: Implement repo indexing workflow
 - **Files**: `path/to/file.rs`
@@ -65,7 +65,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.5: Add progress tracking and logging
 - **Files**: `path/to/file.rs`
@@ -75,7 +75,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 1.6: Implement delete-and-reindex workflow
 - **Files**: `path/to/file.rs`
@@ -85,7 +85,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ---
 
@@ -100,7 +100,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.2: Write integration tests for full pipeline
 - **Files**: `path/to/file.rs`
@@ -110,7 +110,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 
 ### Task 2.3: Add CLI command for indexing
 - **Files**: `path/to/file.rs`
@@ -120,7 +120,7 @@ ______________________________________________________________________
 - **Verify**: `cargo test --workspace`
 - **Done When**: [Success criteria]
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
 ## Checkpoints
 
 ### Checkpoint: Review Implementation
@@ -130,4 +130,4 @@ ______________________________________________________________________
 - **Action**: Review the implementation before proceeding
 - **Done When**: User confirms implementation is correct
 - **Updated At**: 2026-02-18
-- **Status**: [ ] pending
+- **Status**: [x] complete
