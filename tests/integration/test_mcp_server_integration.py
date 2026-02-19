@@ -32,3 +32,26 @@ def test_register_tool_with_sdk_server() -> None:
 
     tool_names = [tool.name for tool in server._tool_manager.list_tools()]  # pyright: ignore[reportPrivateUsage]
     assert "ping" in tool_names
+
+
+@pytest.mark.integration
+def test_retrieval_tools_registered_with_expected_schema() -> None:
+    from app.mcp.server import create_mcp_server
+
+    server = create_mcp_server()
+
+    tools = {tool.name: tool for tool in server._tool_manager.list_tools()}  # pyright: ignore[reportPrivateUsage]
+    assert "code_search" in tools
+    assert "code_snippet" in tools
+
+    search_schema = tools["code_search"].parameters
+    assert search_schema["type"] == "object"
+    assert set(search_schema["required"]) == {"query", "repo_id"}
+    assert "top_k" in search_schema["properties"]
+    assert search_schema["properties"]["top_k"]["default"] == 10
+
+    snippet_schema = tools["code_snippet"].parameters
+    assert snippet_schema["type"] == "object"
+    assert set(snippet_schema["required"]) == {"repo_id", "path", "start_line", "end_line"}
+    assert snippet_schema["properties"]["start_line"]["type"] == "integer"
+    assert snippet_schema["properties"]["end_line"]["type"] == "integer"

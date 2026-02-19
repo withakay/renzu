@@ -6,7 +6,6 @@ default OpenAI-backed implementation and an in-memory content-hash cache.
 
 from __future__ import annotations
 
-import abc
 import asyncio
 import hashlib
 import time
@@ -68,7 +67,6 @@ class OpenAIEmbedder(EmbeddingProvider):
     timeout_seconds: float = 30.0
     max_batch_size: int = 128
     requests_per_second: float | None = None
-    send_dimensions: bool = False
     rate_limiter: RateLimiter | None = None
     client: httpx.AsyncClient | None = None
 
