@@ -36,6 +36,7 @@ class Handler(BaseHTTPRequestHandler):
         self._send_json(404, {"error": "not found"})
 
     def log_message(self, format: str, *args) -> None:
+        # Keep container logs quiet; only show errors.
         return
 
 

@@ -210,3 +210,7 @@ __marimo__/
 !.ito/.state/audit/
 .ito/config.local.json
 .local/ito/config.json
+
+# Local external dependency checkouts (symlinks)
+.local/glean-docker
+.local/glass-docker
