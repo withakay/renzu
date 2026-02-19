@@ -40,15 +40,14 @@ class TestGlassClientIntegration:
         get_settings.cache_clear()
         monkeypatch.setenv("GLASS_URL", glass_url)
 
-        from app.glass.client import GlassClient
+        from app.glass.client import GlassClient, GlassClientConfig
 
-        client = GlassClient(graceful=False)
+        client = GlassClient(config=GlassClientConfig(base_url=glass_url))
         symbols = await client.list_symbols(repo_id, path)
-        assert isinstance(symbols, list)
+        assert isinstance(symbols, dict)
 
         desc = await client.describe_symbol(symbol_id)
-        # Some Glass setups may not return documentation/signature.
-        assert desc is None or desc.symbol is not None
+        assert isinstance(desc, dict)
 
         refs = await client.find_references(symbol_id)
-        assert isinstance(refs, list)
+        assert isinstance(refs, dict)

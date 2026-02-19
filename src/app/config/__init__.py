@@ -32,9 +32,6 @@ class Settings(BaseSettings):
     openai_timeout_seconds: float = 30.0
     # When unset, the embedder falls back to qdrant_vector_size.
     embedding_vector_size: int | None = None
-    # Embedding provider configuration.
-    embedding_provider: str = "openai"
-    embedding_cache_enabled: bool = True
     # Ollama embedding configuration.
     ollama_url: str = "http://localhost:11434"
     ollama_embedding_model: str = "nomic-embed-text"

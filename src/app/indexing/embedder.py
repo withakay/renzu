@@ -11,32 +11,23 @@ import hashlib
 import time
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, Protocol, cast
+from typing import Any, Protocol, cast
 
 import httpx
 
 from app.config import Settings, get_settings
-
-if TYPE_CHECKING:
-    from collections.abc import Awaitable, Callable
 
 
 class RateLimiter(Protocol):
     async def wait(self) -> None: ...
 
 
-class EmbeddingProvider(abc.ABC):
-    """Abstract base class for embedding providers."""
+class EmbeddingProvider(Protocol):
+    """Protocol for embedding providers."""
 
-    @property
-    def namespace(self) -> str:
-        """Namespace used for cache key derivation."""
-
-        return self.__class__.__name__
-
-    @abc.abstractmethod
     async def embed(self, texts: list[str]) -> list[list[float]]:
         """Return embeddings for each input text, in order."""
+        ...
 
 
 def _content_hash(text: str) -> str:
@@ -75,6 +66,7 @@ class OpenAIEmbedder:
     timeout_seconds: float = 30.0
     max_batch_size: int = 128
     requests_per_second: float | None = None
+    send_dimensions: bool = False
     rate_limiter: RateLimiter | None = None
     client: httpx.AsyncClient | None = None
 
@@ -113,8 +105,12 @@ class OpenAIEmbedder:
             "model": model,
             "input": texts,
         }
+        if self.send_dimensions:
+            payload["dimensions"] = expected_size
 
         async with self._lock:
+            if self.rate_limiter is not None:
+                await self.rate_limiter.wait()
             await self._sleep_if_needed(min_interval_seconds=min_interval_seconds)
             if self.client is None:
                 async with httpx.AsyncClient(
@@ -172,13 +168,19 @@ class OpenAIEmbedder:
             self.vector_size or settings.embedding_vector_size or settings.qdrant_vector_size
         )
 
-        batch_size = self.batch_size or settings.embedding_batch_size
+        batch_size = self.batch_size or self.max_batch_size or settings.embedding_batch_size
         if batch_size <= 0:
             raise ValueError("embedding_batch_size must be > 0")
 
         min_interval_seconds = self.min_interval_seconds
         if min_interval_seconds is None:
-            min_interval_seconds = settings.embedding_min_interval_seconds
+            if self.requests_per_second:
+                min_interval_seconds = 1.0 / self.requests_per_second
+            else:
+                min_interval_seconds = settings.embedding_min_interval_seconds
+
+        if min_interval_seconds < 0:
+            raise ValueError("min_interval_seconds must be >= 0")
 
         if len(texts) <= batch_size:
             return await self._embed_batch(
@@ -456,13 +458,13 @@ class CacheEmbedder(EmbeddingProvider):
 
     @property
     def namespace(self) -> str:
-        return self._provider.namespace
+        return getattr(self._provider, "namespace", self._provider.__class__.__name__)
 
     async def embed(self, texts: list[str]) -> list[list[float]]:
         if not texts:
             return []
 
-        hashes = [f"{self._provider.namespace}:{_content_hash(text)}" for text in texts]
+        hashes = [f"{self.namespace}:{_content_hash(text)}" for text in texts]
         missing_texts: list[str] = []
         missing_hashes: list[str] = []
 
