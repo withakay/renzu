@@ -6,6 +6,7 @@ default OpenAI-backed implementation and an in-memory content-hash cache.
 
 from __future__ import annotations
 
+import abc
 import asyncio
 import hashlib
 import time
@@ -51,7 +52,7 @@ def _coerce_vector(raw: Any, *, expected_size: int | None) -> list[float]:
 
 
 @dataclass(slots=True)
-class OpenAIEmbedder:
+class OpenAIEmbedder(EmbeddingProvider):
     """OpenAI embeddings API implementation.
 
     Uses the `POST /v1/embeddings` endpoint.
@@ -61,6 +62,7 @@ class OpenAIEmbedder:
     api_key: str | None = None
     base_url: str | None = None
     vector_size: int | None = None
+    send_dimensions: bool = False
     batch_size: int | None = None
     min_interval_seconds: float | None = None
     timeout_seconds: float = 30.0
@@ -210,7 +212,7 @@ class OpenAIEmbedder:
 
 
 @dataclass(slots=True)
-class OllamaEmbedder:
+class OllamaEmbedder(EmbeddingProvider):
     """Ollama embeddings API implementation.
 
     Uses the local Ollama HTTP API (`POST /api/embed`).

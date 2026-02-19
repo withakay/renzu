@@ -7,11 +7,12 @@ import uuid
 
 import pytest
 
+from app.indexing.embedder import EmbeddingProvider
 from app.indexing.qdrant import ChunkPayload, ChunkPoint, QdrantClient
 from app.retrieval.search import SearchService
 
 
-class StaticEmbedder:
+class StaticEmbedder(EmbeddingProvider):
     async def embed(self, texts: list[str]) -> list[list[float]]:
         return [[0.1, 0.2, 0.3, 0.4] for _ in texts]
 

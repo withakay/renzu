@@ -47,7 +47,9 @@ class TestGlassClientIntegration:
         assert isinstance(symbols, dict)
 
         desc = await client.describe_symbol(symbol_id)
+        # Some Glass setups may not return documentation/signature.
         assert isinstance(desc, dict)
+        assert not desc or "symbol" in desc
 
         refs = await client.find_references(symbol_id)
         assert isinstance(refs, dict)
