@@ -74,7 +74,7 @@ class GlassClient:
     """
 
     _LIST_SYMBOLS_PATH = "/v1/glass/list_symbols"
-    _DESCRIBE_PATH = "/v1/glass/describe"
+    _DESCRIBE_PATH = "/v1/glass/describe_symbol"
     _FIND_REFERENCES_PATH = "/v1/glass/find_references"
 
     def __init__(
