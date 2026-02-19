@@ -50,6 +50,7 @@ services:
       - "12346:12346"
     volumes:
       - ./glass-stub:/app:ro
+      - ${WORKSPACE_PATH:-..}:/workspace:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; s=socket.create_connection(('127.0.0.1',12346),1); s.close()"]
       interval: 10s
