@@ -41,6 +41,9 @@ class Settings(BaseSettings):
     # Optional. When unset, Glass integration is disabled and callers must handle fallbacks.
     glass_url: str | None = None
     glass_timeout_seconds: float = 5.0
+    # Optional. When unset, Zoekt lexical search integration is disabled.
+    zoekt_url: str | None = None
+    zoekt_timeout_seconds: float = 5.0
     http_port: int = 8000
     mcp_port: int = 9000
     log_level: str = "INFO"
