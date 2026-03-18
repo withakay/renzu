@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
+from starlette.routing import Mount
 
 
 @pytest.mark.unit
@@ -51,6 +52,19 @@ class TestHealthEndpoints:
             assert data["status"] == "not_ready"
             assert data["checks"]["qdrant"]["healthy"] is False
             assert data["checks"]["qdrant"]["detail"] == "Connection refused"
+
+    def test_mcp_http_mount_is_registered(self) -> None:
+        from app.main import app
+
+        mounts = [route for route in app.routes if isinstance(route, Mount)]
+        assert any(route.path == "/mcp" for route in mounts)
+
+    def test_mcp_http_endpoint_is_exposed(self) -> None:
+        from app.main import app
+
+        client = TestClient(app)
+        response = client.get("/mcp", follow_redirects=False)
+        assert response.status_code in {307, 400, 405}
 
 
 @pytest.mark.unit

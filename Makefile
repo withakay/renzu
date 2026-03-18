@@ -1,6 +1,6 @@
 .PHONY: install test test-all lint format format-check typecheck check
 .PHONY: docker-build docker-up docker-down docker-logs
-.PHONY: openapi-spec clean help
+.PHONY: openapi-spec mcp-cli-generate mcp-cli-list-tools clean help
 
 # Default target
 .DEFAULT_GOAL := help
@@ -69,6 +69,12 @@ docker-logs: ## Follow Docker logs
 
 openapi-spec: ## Generate OpenAPI spec
 	uv run python -m app.openapi > openapi.json
+
+mcp-cli-generate: ## Generate standalone CLI from MCP HTTP server
+	uvx fastmcp generate-cli http://localhost:8000/mcp mcp-cli/renzu-mcp-cli.py -f
+
+mcp-cli-list-tools: ## List MCP tools via generated CLI
+	uv run --with fastmcp python mcp-cli/renzu-mcp-cli.py list-tools
 
 clean: ## Remove cache directories
 	find . -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true

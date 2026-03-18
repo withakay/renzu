@@ -187,6 +187,18 @@ def test_create_server_uses_default_metadata() -> None:
 
 
 @pytest.mark.unit
+def test_create_server_accepts_streamable_http_path_override() -> None:
+    from app.mcp.server import create_mcp_server
+
+    server = create_mcp_server(
+        fastmcp_factory=_build_fake_server,
+        streamable_http_path="/",
+    )
+
+    assert server.init_kwargs["streamable_http_path"] == "/"
+
+
+@pytest.mark.unit
 def test_register_tool_registers_callable() -> None:
     from app.mcp.server import create_mcp_server, register_tool
 
@@ -444,6 +456,25 @@ def test_run_stdio_server_uses_stdio_transport() -> None:
     run_stdio_server(server)
 
     assert server.run_calls == [{"transport": "stdio"}]
+
+
+@pytest.mark.unit
+def test_run_streamable_http_server_uses_http_transport() -> None:
+    from app.mcp.server import create_mcp_server, run_streamable_http_server
+
+    server = create_mcp_server(fastmcp_factory=_build_fake_server)
+
+    run_streamable_http_server(server, mount_path="/mcp")
+
+    assert server.run_calls == [{"transport": "streamable-http", "mount_path": "/mcp"}]
+
+
+@pytest.mark.unit
+def test_create_streamable_http_app_raises_when_missing_factory() -> None:
+    from app.mcp.server import create_streamable_http_app
+
+    with pytest.raises(RuntimeError, match="streamable_http_app"):
+        create_streamable_http_app(object())
 
 
 @pytest.mark.unit

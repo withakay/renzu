@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from typing import Any
 
 from fastapi import FastAPI, Response
@@ -12,15 +13,26 @@ from app.api.routes import register_routes
 from app.config import get_settings
 from app.dependencies import check_all_dependencies
 from app.logging_config import setup_logging
+from app.mcp.server import create_mcp_server, create_streamable_http_app
 from app.middleware import CorrelationIdMiddleware, RequestLoggingMiddleware
 
 settings = get_settings()
 setup_logging(settings.log_level)
 
+mcp_server = create_mcp_server(streamable_http_path="/")
+
+
+@asynccontextmanager
+async def _app_lifespan(_: FastAPI):
+    async with mcp_server.session_manager.run():
+        yield
+
+
 app = FastAPI(
     title="Code Context Service",
     description="Code RAG with vector search and symbol navigation for AI agents",
     version=__version__,
+    lifespan=_app_lifespan,
 )
 
 app.add_middleware(CorrelationIdMiddleware)
@@ -33,6 +45,9 @@ app.add_middleware(
 )
 
 register_routes(app)
+
+# Serve MCP over streamable HTTP under /mcp.
+app.mount("/mcp", create_streamable_http_app(mcp_server))
 
 
 @app.get("/healthz")

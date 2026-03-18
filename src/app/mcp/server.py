@@ -46,6 +46,7 @@ def _load_fastmcp() -> type[Any]:
 def create_mcp_server(
     metadata: MCPServerMetadata | None = None,
     fastmcp_factory: FastMCPFactory | None = None,
+    streamable_http_path: str | None = None,
 ) -> Any:
     """Create MCP server instance with required metadata."""
     resolved_metadata = metadata or MCPServerMetadata()
@@ -61,6 +62,8 @@ def create_mcp_server(
         "version": resolved_metadata.version,
         "capabilities": resolved_metadata.resolved_capabilities(),
     }
+    if streamable_http_path is not None:
+        requested_kwargs["streamable_http_path"] = streamable_http_path
     factory_signature = signature(factory)
     supports_var_kwargs = any(
         parameter.kind is Parameter.VAR_KEYWORD
@@ -132,3 +135,19 @@ def run_stdio_server(server: Any) -> None:
     if not callable(run):
         raise RuntimeError("Provided server does not expose a run API")
     run(transport="stdio")
+
+
+def create_streamable_http_app(server: Any) -> Any:
+    """Build a Starlette app for MCP streamable HTTP transport."""
+    app_factory = getattr(server, "streamable_http_app", None)
+    if not callable(app_factory):
+        raise RuntimeError("Provided server does not expose streamable_http_app")
+    return app_factory()
+
+
+def run_streamable_http_server(server: Any, *, mount_path: str = "/mcp") -> None:
+    """Run MCP server over streamable HTTP transport."""
+    run = getattr(server, "run", None)
+    if not callable(run):
+        raise RuntimeError("Provided server does not expose a run API")
+    run(transport="streamable-http", mount_path=mount_path)
