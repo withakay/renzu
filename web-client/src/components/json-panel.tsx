@@ -2,6 +2,15 @@ import { Copy } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardTitle } from '@/components/ui/card'
+import {
+  CodeBlock,
+  CodeBlockBody,
+  CodeBlockContent,
+  CodeBlockCopyButton,
+  CodeBlockFilename,
+  CodeBlockHeader,
+  CodeBlockItem,
+} from '@/components/kibo-ui/code-block'
 
 type JsonPanelProps = {
   title: string
@@ -25,10 +34,25 @@ export function JsonPanel({ title, description, value }: JsonPanelProps) {
         </div>
         <Button type="button" variant="outline" className="gap-2" onClick={copyJson}>
           <Copy className="h-4 w-4" />
-          Copy
+          Copy JSON
         </Button>
       </div>
-      <pre className="max-h-80 overflow-auto rounded-md bg-slate-950 p-3 text-xs text-slate-50">{formatted}</pre>
+      <CodeBlock
+        data={[{ language: 'json', filename: `${title.toLowerCase().replaceAll(' ', '-')}.json`, code: formatted }]}
+        defaultValue="json"
+      >
+        <CodeBlockHeader className="items-center justify-between">
+          <CodeBlockFilename value="json">{`${title.toLowerCase().replaceAll(' ', '-')}.json`}</CodeBlockFilename>
+          <CodeBlockCopyButton />
+        </CodeBlockHeader>
+        <CodeBlockBody>
+          {(item) => (
+            <CodeBlockItem key={item.language} value={item.language} className="max-h-80 overflow-auto">
+              <CodeBlockContent language="json">{item.code}</CodeBlockContent>
+            </CodeBlockItem>
+          )}
+        </CodeBlockBody>
+      </CodeBlock>
     </Card>
   )
 }

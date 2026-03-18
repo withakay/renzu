@@ -12,6 +12,14 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
+}
+
 body {
   margin: 0;
   min-width: 320px;
@@ -19,4 +27,81 @@ body {
     radial-gradient(circle at 20% 10%, #e0f2fe 0%, transparent 32%),
     radial-gradient(circle at 82% 14%, #cffafe 0%, transparent 28%),
     #f8fafc;
+}
+
+html.dark body {
+  background:
+    radial-gradient(circle at 18% 12%, rgba(56, 189, 248, 0.18) 0%, transparent 36%),
+    radial-gradient(circle at 82% 14%, rgba(34, 211, 238, 0.12) 0%, transparent 32%),
+    radial-gradient(circle at 50% 90%, rgba(59, 130, 246, 0.08) 0%, transparent 42%),
+    #020617;
+}
+
+@layer base {
+  :root {
+    --radius: 0.95rem;
+
+    --background: 210 40% 98%;
+    --foreground: 222.2 47.4% 11.2%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 44%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 199 89% 48%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+  }
+
+  html.dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 6.8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 6.8%;
+    --popover-foreground: 210 40% 98%;
+
+    --muted: 222.2 84% 8.2%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 222.2 84% 9.4%;
+    --accent-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 199 89% 48%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 84% 4.9%;
+
+    --secondary: 222.2 84% 8.2%;
+    --secondary-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+  }
+
+  body {
+    background-color: hsl(var(--background));
+    color: hsl(var(--foreground));
+  }
 }
