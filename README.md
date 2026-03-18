@@ -73,4 +73,68 @@ docker compose -f docker-compose.yml -f docker/compose.prod.yml up -d
 Additional service endpoints for full stack:
 
 - code-context HTTP: `http://localhost:8000`
-- code-context MCP port: `localhost:9000`
+- code-context MCP (streamable HTTP): `http://localhost:8000/mcp`
+
+### MCP CLI
+
+Generate a typed CLI from the live MCP server:
+
+```bash
+make mcp-cli-generate
+```
+
+Use the generated CLI:
+
+```bash
+uv run --with fastmcp python mcp-cli/renzu-mcp-cli.py --help
+uv run --with fastmcp python mcp-cli/renzu-mcp-cli.py list-tools
+uv run --with fastmcp python mcp-cli/renzu-mcp-cli.py call-tool code_search --query "mcp http" --repo-id renzu
+```
+
+Optional override for remote/local MCP URL:
+
+```bash
+RENZU_MCP_URL=http://localhost:8000/mcp \
+  uv run --with fastmcp python mcp-cli/renzu-mcp-cli.py list-tools
+```
+
+## Getting Started + Troubleshooting
+
+Quick start:
+
+```bash
+cp .env.example .env
+docker compose --profile web up -d --build
+```
+
+Open:
+
+- Web client: `http://localhost:8080`
+- API docs: `http://localhost:8000/docs`
+
+Index first (required before search/snippet):
+
+```bash
+curl -s -X POST http://localhost:8000/v1/index \
+  -H "content-type: application/json" \
+  -d '{
+    "repo_id":"renzu",
+    "path":"/workspace",
+    "globs":["src/**/*.py","tests/**/*.py"]
+  }'
+```
+
+Use your entire code folder:
+
+- Set `WORKSPACE_PATH` in `.env` (example: `WORKSPACE_PATH=/Users/jack/Code`)
+- Recreate services: `docker compose down && docker compose up -d --build`
+- Keep mount read-only (`:ro`) for safety (already configured)
+
+Common issues:
+
+- **UI shows `Load failed`**: restart API/web services to pick latest CORS support:
+  `docker compose up -d --build code-context web-client`
+- **Index fails with Qdrant point ID error**: update to latest `main` and rebuild `code-context`
+- **Glass shows unavailable or empty data**: ensure `glass-server` is healthy (`docker compose ps`) and re-run `list_symbols`
+- **Compose build output crashes in PTY environments**: run with redirected logs:
+  `docker compose up -d --build > /tmp/renzu-compose.log 2>&1`
